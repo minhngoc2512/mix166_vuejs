@@ -1,5 +1,6 @@
 <template>
     <div>
+
         <ol class="breadcrumb">
             <li class="breadcrumb-item">Home</li>
             <li class="breadcrumb-item"><a href="#">Admin</a>
@@ -15,13 +16,17 @@
                 </div>
             </li>
         </ol>
-        <div class="container-fluid">
-            <div class="animated">
-                <h2>{{demo}}</h2>
-                <input type="button" class="btn btn-danger" value="Click" />
+        <div class="container">
+        <div class="card">
+            <div class="card-header">
+                demo card
+            </div>
+            <div class="card-block">
+
             </div>
         </div>
 
+        </div>
     </div>
 </template>
 <script>

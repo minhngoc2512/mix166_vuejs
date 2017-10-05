@@ -37,7 +37,7 @@ class UserLoginCmsRequest extends FormRequest
             'name.required'=>'Vui lòng nhập tên người dùng',
             'email.required'=>'Vui lòng nhập địa chỉ email của bạn',
             'repeatpassword.required'=>'Vui lòng nhập lại mật khẩu của bạn',
-            'password'=>'Vui lòng nhập mật khẩu của bạn',
+            'password.required'=>'Vui lòng nhập mật khẩu của bạn',
             'repeatpassword.same'=>'Mật khẩu nhập lại không đúng',
             'password.min'=>'Mật khẩu quá ngắn',
             'repeatpassword.min'=>'Mật khẩu nhập lại quá ngắn'

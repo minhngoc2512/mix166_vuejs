@@ -33,7 +33,12 @@
 
 
 @yield('content')
+<script>
+    window.cms ={
+        "csrfToken": "{{csrf_token()}}"
+    }
 
+</script>
 
 <!-- Bootstrap and necessary plugins -->
 <script src="{!! asset('node_modules/jquery/dist/jquery.min.js') !!}"></script>

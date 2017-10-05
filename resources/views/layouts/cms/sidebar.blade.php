@@ -9,10 +9,10 @@
                 UI Elements
             </li>
             <li class="nav-item nav-dropdown">
-                <a class="nav-link nav-dropdown-toggle" href="#"><i class="icon-folder-alt"></i>Quản lí Media </a>
+                <a class="nav-link nav-dropdown-toggle" ><i class="icon-folder-alt"></i>Quản lí Media </a>
                 <ul class="nav-dropdown-items">
                     <li class="nav-item">
-                        <a class="nav-link" href="components-buttons.html"><i class="icon-docs"></i> Tệp tin</a>
+                        <a class="nav-link" href="{!! route('file_manage') !!}"><i class="icon-docs"></i> Tệp tin</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="components-buttons.html"><i class="icon-shield"></i> Tệp tin bị khóa</a>
@@ -26,7 +26,7 @@
                 <a class="nav-link nav-dropdown-toggle" href="#"><i class="icon-people"></i>Quản lí người dùng</a>
                 <ul class="nav-dropdown-items">
                     <li class="nav-item">
-                        <a class="nav-link" href="icons-font-awesome.html"><i class="icon-star"></i>Người dùng
+                        <a class="nav-link" href="{!! route('user_list') !!}"><i class="icon-star"></i>Người dùng
                             <span class="badge badge-secondary">4.7</span></a>
                     </li>
                     <li class="nav-item">
@@ -41,13 +41,13 @@
                 Quản lí nội dung
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="widgets.html"><i class="icon-calculator"></i> Nghệ sĩ <span class="badge badge-primary">NEW</span></a>
+                <a class="nav-link" href="{!!route('artist_list')!!}"><i class="icon-user-following"></i> Nghệ sĩ <span class="badge badge-primary">NEW</span></a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="charts.html"><i class="icon-pie-chart"></i> Thể loại</a>
+                <a class="nav-link" href="{!!url('/cms/genre/list')!!}"><i class="icon-list icons font-2xl"></i> Thể loại</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="charts.html"><i class="icon-pie-chart"></i> Quản lí chuyên mục</a>
+                <a class="nav-link" href="{!!url('/cms/category/list')!!}"><i class="icon-playlist icons "></i> Quản lí chuyên mục</a>
             </li>
 
             <li class="divider"></li>

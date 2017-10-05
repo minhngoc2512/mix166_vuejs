@@ -18,11 +18,11 @@
           content="Bootstrap,Admin,Template,Open,Source,AngularJS,Angular,Angular2,Angular 2,Angular4,Angular 4,jQuery,CSS,HTML,RWD,Dashboard,React,React.js,Vue,Vue.js">
     <link rel="shortcut icon" href="{!! asset("img/favicon.png") !!}">
     <title>CoreUI - Open Source Bootstrap Admin Template</title>
+     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Icons -->
     <link href="{!! asset('node_modules/font-awesome/css/font-awesome.min.css') !!}" rel="stylesheet">
     <link href="{!! asset('node_modules/simple-line-icons/css/simple-line-icons.css') !!}" rel="stylesheet">
-
     <!-- Main styles for this application -->
     <link href="{!! asset('css/style.css') !!}" rel="stylesheet">
 </head>
@@ -84,7 +84,14 @@
             <a class="nav-link dropdown-toggle nav-link" data-toggle="dropdown" href="#" role="button"
                aria-haspopup="true" aria-expanded="false">
                 <img src="{!! asset('img/avatars/6.jpg') !!}" class="img-avatar" alt="admin@bootstrapmaster.com">
-                <span class="d-md-down-none">admin</span>
+                <span class="d-md-down-none">
+                    @if(Auth::check())
+                        {!! Auth::user()->name !!}
+                        @else
+                        Login
+                    @endif
+
+                </span>
             </a>
             <div class="dropdown-menu dropdown-menu-right">
                 <div class="dropdown-header text-center">
@@ -97,7 +104,7 @@
                 <a class="dropdown-item" href="#"><i class="fa fa-tasks"></i> Tasks<span
                             class="badge badge-danger">42</span></a>
                 <a class="dropdown-item" href="#"><i class="fa fa-comments"></i> Comments<span
-                            class="badge badge-warning">42</span></a>
+                             class="badge badge-warning">42</span></a>
                 <div class="dropdown-header text-center">
                     <strong>Settings</strong>
                 </div>
@@ -107,7 +114,7 @@
                 <a class="dropdown-item" href="#"><i class="fa fa-file"></i> Projects<span class="badge badge-primary">42</span></a>
                 <div class="divider"></div>
                 <a class="dropdown-item" href="#"><i class="fa fa-shield"></i> Lock Account</a>
-                <a class="dropdown-item" href="#"><i class="fa fa-lock"></i> Logout</a>
+                <a class="dropdown-item" href="{{route('logout')}}"><i class="fa fa-lock"></i> Logout</a>
             </div>
         </li>
     </ul>
@@ -139,7 +146,13 @@
 <!-- GenesisUI main scripts -->
 
 <script src="{!! asset('js/app_core.js') !!}"></script>
+<script>
+    window.cms ={
+        "csrfToken": "{{csrf_token()}}",
+        "auth":'["{{Auth::user()->id}}","{{Auth::user()->name}}"]'
+    }
 
+</script>
 
 <!-- Plugins and scripts required by this views -->
 

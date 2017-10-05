@@ -15,7 +15,7 @@
                         <div class="input-group mb-3">
                             <span class="input-group-addon"><i class="icon-user"></i>
                             </span>
-                            <input type="text" class="form-control" name="name" placeholder="Username">
+                            <input type="text" class="form-control" name="name" placeholder="Username" value="{{old('name')}}">
 
                         </div>
                         @if($errors->first('email')!=null)
@@ -23,7 +23,7 @@
                         @endif
                         <div class="input-group mb-3">
                             <span class="input-group-addon">@</span>
-                            <input type="email" class="form-control" name="email" placeholder="Email">
+                            <input type="email" class="form-control" name="email" placeholder="Email" value="{{old('email')}}">
                         </div>
                         @if($errors->first('password')!=null)
                             <span class="badge badge-danger">{{$errors->first('password')}}</span>

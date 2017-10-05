@@ -36,16 +36,18 @@
         "run-sequence": "^2.1.0"
     },
     "dependencies": {
-        "bootstrap-vue": "^1.0.0-beta.9",
-        "style-loader": "^0.18.2",
-        "vue-moment": "^2.0.2",
-        "vue-sweetalert": "^0.1.18",
         "bootstrap": "^4.0.0-beta",
+        "bootstrap-vue": "^1.0.0-beta.9",
         "chart.js": "^2.7.0",
+        "fine-uploader": "^5.15.0",
         "font-awesome": "^4.7.0",
         "jquery": "^3.2.1",
         "pace-progress": "^1.0.2",
         "popper.js": "^1.12.5",
-        "simple-line-icons": "^2.4.1"
+        "simple-line-icons": "^2.4.1",
+        "style-loader": "^0.18.2",
+        "vue-moment": "^2.0.2",
+        "vue-resource": "^1.3.4",
+        "vue-sweetalert": "^0.1.18"
     }
 }

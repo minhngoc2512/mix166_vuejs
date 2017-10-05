@@ -11,22 +11,30 @@
 |
 */
 
-Route::get('/', function () {
-    return view('home');
-});
+Route::get('cms', 'HomeController@index')->middleware('auth_cms')->name('home_cms');
 Route::get('file/manage',function(){
     return view('cms.file.file_manage');
-});
-Route::get('cms/user/login','Cms\Auth\LoginController@showFormLogin');
+})->middleware('auth_cms')->name('file_manage');
+Route::get('cms/user/logout','Cms\Auth\LoginController@logoutUser')->name('logout');
+Route::get('cms/user/login','Cms\Auth\LoginController@showFormLogin')->name('login_cms');
 Route::post('cms/user/login',['as'=>'cms.user.check.login','uses'=>'Cms\Auth\LoginController@checkLogin']);
 Route::get('cms/user/register','Cms\Auth\LoginController@showFormRegister');
 Route::post('cms/user/register',['as'=>'cms.user.register','uses'=>'Cms\Auth\LoginController@registerUser']);
-Route::prefix('cms')->group(function(){
+Route::prefix('cms')->middleware('auth_cms')->group(function(){
     Route::prefix('user')->group(function(){
+        Route::get('list','Cms\UsersController@getListUser')->name('user_list');
 
     });
+    Route::prefix('artist')->middleware('auth_cms')->group(function(){
+    	Route::get('list','Cms\ArtistsController@getListArtist')->name('artist_list');
+    });
+    Route::prefix('category')->group(function(){
+    	Route::get('list','Cms\CategoriesController@getListCategory');
+    });
+     Route::prefix('genre')->group(function(){
+        Route::get('list','Cms\GenresController@getList');
+    });
+
 });
 
-Auth::routes();
-
-Route::get('/home', 'HomeController@index')->name('home');
+//Auth::routes();
