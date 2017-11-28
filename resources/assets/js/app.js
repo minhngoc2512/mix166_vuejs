@@ -34,6 +34,7 @@ Vue.use(VueSweetAlert);
  */
 //File Manage
 Vue.component('list_file', require('./components/file/manage.vue'));
+Vue.component('create_file',require('./components/file/create.vue'));
 
 //User Manager
 

@@ -44,7 +44,7 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr v-for="category in categories">
+                        <tr v-for="category in categories" :key="category.id">
                             <td>{{category.name}}</td>
                             <td>
                                 <span class="badge badge-success" v-if="category.type =='audio'">Audio </span>

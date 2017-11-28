@@ -43,7 +43,7 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr v-for="genre in genres">
+                        <tr v-for="genre in genres" :key="genre.id">
                             <td>{{genre.name}}</td>
 
 

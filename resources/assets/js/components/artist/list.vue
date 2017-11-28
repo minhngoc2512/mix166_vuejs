@@ -45,7 +45,7 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr v-for="artist in artists">
+                        <tr v-for="artist in artists" :key="artist.id">
                             <td>{{artist.name}}</td>
                             <td style="width:20%"><img :src="'/storage'+artist.thumbnail" style="width:100%;"></td>
 
@@ -98,10 +98,10 @@
                 </p>
             </form>
         </b-modal>
-        <b-modal id="edit_artist" title="Chèn thông tin nghệ sĩ" @cancel="cancelValue" @ok="editArtist">
+        <b-modal id="edit_artist" title="Sửa thông tin nghệ sĩ" @cancel="cancelValue" @ok="editArtist">
             <form class="form-group">
                 <p clas="my-4">Tên nghệ sĩ</p>
-                <input type="text" class="form-control" v-model="name" placeholder="Name" :value="name">
+                <input type="text" class="form-control" v-model="name" placeholder="Name" >
                 <img :src="'/storage' + image_demo" style="width:100%" class="img-responsive">
                 <img :src="image_demo" style="width:100%" class="img-responsive">
                 <p clas="my-4">Chọn ảnh</p>
@@ -185,7 +185,6 @@
                     if (this.readyState == 4 && this.status == 200) {
                         console.log('ok');
                     }
-
                 };
                 request.open("POST", "/api/artist/add");
                 request.send(formData);
@@ -234,7 +233,6 @@
             info(response){
 
                 if (response.data.error) {
-                    console.log(response.data.error);
                     this.$swal({
                         title: 'Error...',
                         text: 'Cập nhật không thành công',

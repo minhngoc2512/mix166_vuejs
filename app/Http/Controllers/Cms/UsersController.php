@@ -10,5 +10,8 @@ class UsersController extends Controller
     public function getListUser(){
              return view('cms.user.list');
     }
+    public function createUser(){
+        return view('cms.user.create');
+    }
     //
 }
