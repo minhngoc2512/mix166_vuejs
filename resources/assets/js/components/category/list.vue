@@ -48,7 +48,8 @@
                             <td>{{category.name}}</td>
                             <td>
                                 <span class="badge badge-success" v-if="category.type =='audio'">Audio </span>
-                                <span class="badge badge-danger" v-else>Video</span>
+                                <span class="badge badge-danger" v-if="category.type =='video'">Video</span>
+                                <span class="badge badge-info" v-if="category.type =='all'">Hỗn hợp</span>
                             </td>
                             <td>
                                 <span class="badge badge-success" v-if="category.status =='yes'">Đang hoạt động </span>
@@ -92,6 +93,7 @@
                 <b-form-radio-group id="radios2" v-model="selected" name="radioSubComponent">
                     <b-form-radio value="audio">Audio</b-form-radio>
                     <b-form-radio value="video">Video</b-form-radio>
+                     <b-form-radio value="all">Cả hai</b-form-radio>
                 </b-form-radio-group>
 
                 <p class="my-4">Trạng thái
@@ -111,6 +113,7 @@
                 <b-form-radio-group id="radios2" v-model="selected" name="radioSubComponent">
                     <b-form-radio value="audio">Audio</b-form-radio>
                     <b-form-radio value="video">Video</b-form-radio>
+                    <b-form-radio value="all">Cả hai</b-form-radio>
                 </b-form-radio-group>
                 <p class="my-4">Trạng thái
                     <label class="switch switch-text switch-pill switch-primary">
@@ -274,8 +277,6 @@
                             type: 'success'
                         });
                         this.getList();
-
-
                     }
                 })
             },

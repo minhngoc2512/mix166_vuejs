@@ -47,14 +47,9 @@ class CategoriesApiController extends Controller
 			}else{
 				$category->status="no";
 			}
-			if($request->selected =="video"){
-				$category->type= "video";
-			}else{
-				$category->type = "audio";
-			}
+			$category->type = $request->selected;
 			$category->save();
 			return ;
-
 	}
 	function delete($id){
 		$category = Category::find($id);

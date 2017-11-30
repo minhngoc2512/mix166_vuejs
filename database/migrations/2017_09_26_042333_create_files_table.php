@@ -26,7 +26,7 @@ class CreateFilesTable extends Migration
             $table->integer('genre_id');
             $table->integer('artist_id');
             $table->string('type');
-            $table->integer('file_view');
+            $table->integer('file_view')->default(0);
             $table->timestamp('published_at');
             $table->softDeletes();
             $table->timestamps();

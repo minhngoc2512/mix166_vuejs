@@ -47534,7 +47534,7 @@ exports = module.exports = __webpack_require__(7)(undefined);
 
 
 // module
-exports.push([module.i, "\n.color-text-waring {\n  color: red;\n}\n", ""]);
+exports.push([module.i, "\n.color-text-warring {\n  color: red;\n}\n", ""]);
 
 // exports
 
@@ -47651,150 +47651,182 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-    data: function data() {
-        return {
-            listCategories: [],
-            listGenres: [],
-            listArtists: [],
-            typeFileInput: "url",
-            typeFile: "audio",
-            thumbnail: null,
-            thumbnailShow: null,
-            name: '',
-            category: '',
-            genre: '',
-            artist: '',
-            url: '',
-            fileMedia: null,
-            status: true
-        };
-    },
-    mounted: function mounted() {
-        this.getCategory();
-        this.getGenre();
-        this.getArtist();
-    },
+  data: function data() {
+    return {
+      listCategories: [],
+      listGenres: [],
+      listArtists: [],
+      typeFileInput: "url",
+      typeFile: "audio",
+      statusTypeFile: "",
+      thumbnail: null,
+      thumbnailShow: null,
+      name: "",
+      category: "",
+      genre: "",
+      artist: "",
+      url: "",
+      fileMedia: null,
+      status: true
+    };
+  },
+  mounted: function mounted() {
+    this.getCategory();
+    this.getGenre();
+    this.getArtist();
+  },
 
-    methods: {
-        getCategory: function getCategory() {
-            var _this = this;
-
-            window.axios.get("/api/category/list").then(function (response) {
-                _this.listCategories = response.data.category.data;
-            });
-        },
-        getGenre: function getGenre() {
-            var _this2 = this;
-
-            window.axios.get("/api/genre/list").then(function (response) {
-                _this2.listGenres = response.data.genre.data;
-            });
-        },
-        getArtist: function getArtist() {
-            var _this3 = this;
-
-            window.axios.get("/api/artist/list").then(function (response) {
-                _this3.listArtists = response.data.artist.data;
-            });
-        },
-        submitFile: function submitFile() {
-            if (this.typeFileInput === "file") {
-                console.log("file null");
-                if (this.name === '' || this.thumbnail === null || this.category === '' || this.genre === '' || this.artist === '' || this.fileMedia === null) {
-                    this.$swal({
-                        title: 'Error...',
-                        text: 'Vui lòng điền đầy đủ thông tin!',
-                        type: "error"
-                    });
-                } else {
-                    this.$swal({
-                        title: 'Ok',
-                        text: "Thêm file thành công!",
-                        type: 'info'
-                    });
-                }
-            } else {
-                console.log("url null");
-                if (this.name === '' || this.thunbnail === null || this.category === '' || this.genre === '' || this.artist === '' || this.url === null) {
-                    this.$swal({
-                        title: 'Error...',
-                        text: 'Vui lòng điền đầy đủ thông tin!',
-                        type: "error"
-                    });
-                } else {
-                    this.$swal({
-                        title: 'Ok',
-                        text: "Thêm file thành công!",
-                        type: 'info'
-                    });
-                }
-            }
-        },
-        onThumbnailChange: function onThumbnailChange(e) {
-            var files = e.target.files || e.dataTransfer.files;
-            if (files[0].type.search("image") !== -1) {
-                this.thumbnail = files[0];
-                if (!files.length) return;
-                this.createImage(files[0]);
-            } else {
-                this.$swal({
-                    title: 'Error...',
-                    text: 'Vui lòng chọn đúng định dạng file',
-                    type: "error"
-                });
-                this.thumbnailShow = null;
-            }
-        },
-        createImage: function createImage(file) {
-            var reader = new FileReader();
-            var vm = this;
-            reader.onload = function (e) {
-                vm.thumbnailShow = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        },
-        onFileChange: function onFileChange(e) {
-            var file = e.target.files || e.dataTransfer.files;
-            console.log(file);
-            if (this.typeFile === "audio") {
-                if (file[0].type.search("audio") !== -1) {
-                    this.fileMedia = file[0];
-                } else {
-                    this.$swal({
-                        title: 'Error...',
-                        text: 'Vui lòng chọn đúng định dạng file AUDIO(mp3,acc,...)',
-                        type: "error"
-                    });
-                }
-            } else if (this.typeFile === "video") {
-
-                if (file[0].type.search("video") !== -1) {
-                    this.fileMedia = file[0];
-                } else {
-                    this.$swal({
-                        title: 'Error...',
-                        text: 'Vui lòng chọn đúng định dạng file VIDEO(mp4,flv,avi,...)',
-                        type: "error"
-                    });
-                }
-            }
-        },
-        resetForm: function resetForm() {
-            this.typeFileInput = "url";
-            this.typeFile = "audio";
-            this.thumbnail = null;
-            this.thumbnailShow = null;
-            this.name = '';
-            this.category = '';
-            this.genre = '';
-            this.artist = '';
-            this.url = '';
-            this.fileMedia = null;
-            this.status = true;
-        }
+  watch: {
+    category: function category() {
+      if (this.category.type == "video") {
+        this.statusTypeFile = "video";
+        this.typeFile = "video";
+      } else if (this.category.type == "audio") {
+        this.statusTypeFile = "audio";
+        this.typeFile = "audio";
+      } else if (this.category.type == "all") {
+        this.statusTypeFile = "all";
+        this.typeFile = "";
+      } else {
+        this.statusTypeFile = "";
+        this.typeFile = "";
+      }
     }
+  },
+  methods: {
+    getCategory: function getCategory() {
+      var _this = this;
+
+      window.axios.get("/api/category/list").then(function (response) {
+        _this.listCategories = response.data.category.data;
+      });
+    },
+    getGenre: function getGenre() {
+      var _this2 = this;
+
+      window.axios.get("/api/genre/list").then(function (response) {
+        _this2.listGenres = response.data.genre.data;
+      });
+    },
+    getArtist: function getArtist() {
+      var _this3 = this;
+
+      window.axios.get("/api/artist/list").then(function (response) {
+        _this3.listArtists = response.data.artist.data;
+      });
+    },
+    submitFile: function submitFile() {
+      if (this.typeFileInput === "file") {
+        if (this.name === "" || this.thumbnail === null || this.category === "" || this.genre === "" || this.artist === "" || this.fileMedia === null) {
+          this.$swal({
+            title: "Error...",
+            text: "Vui lòng điền đầy đủ thông tin!",
+            type: "error"
+          });
+        } else {
+          var formData = new FormData();
+          formData.append("name", this.name);
+          formData.append("typeFile", this.typeFile);
+          formData.append("thumbnail", this.thumbnail);
+          formData.append("category", this.category.id);
+          formData.append("genre", this.genre);
+          formData.append("artist", this.artist);
+          formData.append("status", this.status);
+          formData.append("file", this.fileMedia);
+          formData.append("user", window.cms.auth);
+          formData.append("typeFileInput", this.typeFileInput);
+          var request = new XMLHttpRequest();
+          request.onreadystatechange = function () {
+            if (this.status == 200) {
+              console.log(" up file ok");
+            }
+          };
+          request.open("POST", "/api/file/add");
+          request.send(formData);
+        }
+      } else {
+        if (this.name === "" || this.thunbnail === null || this.category === "" || this.genre === "" || this.artist === "" || this.url === null) {
+          this.$swal({
+            title: "Error...",
+            text: "Vui lòng điền đầy đủ thông tin!",
+            type: "error"
+          });
+        } else {
+          this.$swal({
+            title: "Ok",
+            text: "Thêm file thành công!",
+            type: "info"
+          });
+        }
+      }
+    },
+    onThumbnailChange: function onThumbnailChange(e) {
+      var files = e.target.files || e.dataTransfer.files;
+      if (files[0].type.search("image") !== -1) {
+        this.thumbnail = files[0];
+        if (!files.length) return;
+        this.createImage(files[0]);
+      } else {
+        this.$swal({
+          title: "Error...",
+          text: "Vui lòng chọn đúng định dạng file",
+          type: "error"
+        });
+        this.thumbnailShow = null;
+      }
+    },
+    createImage: function createImage(file) {
+      var reader = new FileReader();
+      var vm = this;
+      reader.onload = function (e) {
+        vm.thumbnailShow = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    },
+    onFileChange: function onFileChange(e) {
+      var file = e.target.files || e.dataTransfer.files;
+      if (this.typeFile === "audio") {
+        if (file[0].type.search("audio") !== -1) {
+          this.fileMedia = file[0];
+        } else {
+          this.$swal({
+            title: "Error...",
+            text: "Vui lòng chọn đúng định dạng file AUDIO(mp3,acc,...)",
+            type: "error"
+          });
+        }
+      } else if (this.typeFile === "video") {
+        if (file[0].type.search("video") !== -1) {
+          this.fileMedia = file[0];
+        } else {
+          this.$swal({
+            title: "Error...",
+            text: "Vui lòng chọn đúng định dạng file VIDEO(mp4,flv,avi,...)",
+            type: "error"
+          });
+        }
+      }
+    },
+    resetForm: function resetForm() {
+      this.typeFileInput = "url";
+      this.typeFile = "audio";
+      this.thumbnail = null;
+      this.thumbnailShow = null;
+      this.statusTypeFile = "";
+      this.name = "";
+      this.category = "";
+      this.genre = "";
+      this.artist = "";
+      this.url = "";
+      this.fileMedia = null;
+      this.status = true;
+    }
+  }
 });
 
 /***/ }),
@@ -47842,7 +47874,7 @@ var render = function() {
               }),
               _vm._v(" "),
               _vm.name === ""
-                ? _c("span", { staticClass: "color-text-waring help-block" }, [
+                ? _c("span", { staticClass: "color-text-warring help-block" }, [
                     _vm._v("Vui lòng nhập tên file")
                   ])
                 : _vm._e()
@@ -47875,7 +47907,7 @@ var render = function() {
               }),
               _vm._v(" "),
               _vm.thumbnailShow === null
-                ? _c("span", { staticClass: "help-block color-text-waring" }, [
+                ? _c("span", { staticClass: "help-block color-text-warring" }, [
                     _vm._v("Vui lòng chọn ảnh cho file tải lên")
                   ])
                 : _vm._e()
@@ -47980,7 +48012,7 @@ var render = function() {
                       "option",
                       {
                         key: itemCategory.id,
-                        domProps: { value: itemCategory.id }
+                        domProps: { value: itemCategory }
                       },
                       [_vm._v(_vm._s(itemCategory.name))]
                     )
@@ -47990,7 +48022,7 @@ var render = function() {
               ),
               _vm._v(" "),
               _vm.category === ""
-                ? _c("span", { staticClass: "color-text-waring help-block" }, [
+                ? _c("span", { staticClass: "color-text-warring help-block" }, [
                     _vm._v("Vui lòng chọn chuyên mục")
                   ])
                 : _vm._e()
@@ -48045,7 +48077,7 @@ var render = function() {
               ),
               _vm._v(" "),
               _vm.genre === ""
-                ? _c("span", { staticClass: "color-text-waring help-block" }, [
+                ? _c("span", { staticClass: "color-text-warring help-block" }, [
                     _vm._v("Vui lòng chọn thể loại")
                   ])
                 : _vm._e()
@@ -48103,46 +48135,70 @@ var render = function() {
               ),
               _vm._v(" "),
               _vm.artist === ""
-                ? _c("span", { staticClass: "color-text-waring help-block" }, [
+                ? _c("span", { staticClass: "color-text-warring help-block" }, [
                     _vm._v("Vui lòng chọn nghệ sĩ")
                   ])
                 : _vm._e()
             ]),
             _vm._v(" "),
-            _c(
-              "div",
-              { staticClass: "form-group" },
-              [
-                _c("label", { attrs: { for: "nf-email" } }, [
-                  _vm._v("Định dạng file")
-                ]),
-                _vm._v(" "),
-                _c(
-                  "b-form-radio-group",
-                  {
-                    attrs: { id: "radios2", name: "radioSubComponent" },
-                    model: {
-                      value: _vm.typeFile,
-                      callback: function($$v) {
-                        _vm.typeFile = $$v
-                      },
-                      expression: "typeFile"
-                    }
-                  },
+            _vm.statusTypeFile !== ""
+              ? _c(
+                  "div",
+                  { staticClass: "form-group" },
                   [
-                    _c("b-form-radio", { attrs: { value: "audio" } }, [
-                      _vm._v("Audio")
+                    _c("label", { attrs: { for: "nf-email" } }, [
+                      _vm._v("Định dạng file")
                     ]),
                     _vm._v(" "),
-                    _c("b-form-radio", { attrs: { value: "video" } }, [
-                      _vm._v("Video")
-                    ])
+                    _vm.statusTypeFile == "audio"
+                      ? _c("span", { staticClass: "badge badge-success" }, [
+                          _vm._v("Audio ")
+                        ])
+                      : _vm._e(),
+                    _vm._v(" "),
+                    _vm.statusTypeFile == "video"
+                      ? _c("span", { staticClass: "badge badge-danger" }, [
+                          _vm._v("Video")
+                        ])
+                      : _vm._e(),
+                    _vm._v(" "),
+                    _vm.statusTypeFile == "all"
+                      ? _c(
+                          "b-form-radio-group",
+                          {
+                            attrs: { id: "radios2", name: "radioSubComponent" },
+                            model: {
+                              value: _vm.typeFile,
+                              callback: function($$v) {
+                                _vm.typeFile = $$v
+                              },
+                              expression: "typeFile"
+                            }
+                          },
+                          [
+                            _c("b-form-radio", { attrs: { value: "audio" } }, [
+                              _vm._v("Audio")
+                            ]),
+                            _vm._v(" "),
+                            _c("b-form-radio", { attrs: { value: "video" } }, [
+                              _vm._v("Video")
+                            ])
+                          ],
+                          1
+                        )
+                      : _vm._e(),
+                    _vm._v(" "),
+                    _vm.typeFile === ""
+                      ? _c(
+                          "span",
+                          { staticClass: "color-text-warring help-block" },
+                          [_vm._v("Vui lòng chọn kiểu file")]
+                        )
+                      : _vm._e()
                   ],
                   1
                 )
-              ],
-              1
-            ),
+              : _vm._e(),
             _vm._v(" "),
             _c(
               "div",
@@ -48213,7 +48269,7 @@ var render = function() {
                   _vm.url === ""
                     ? _c(
                         "span",
-                        { staticClass: "color-text-waring help-block" },
+                        { staticClass: "color-text-warring help-block" },
                         [_vm._v("Vui lòng nhập url file")]
                       )
                     : _vm._e()
@@ -48232,7 +48288,7 @@ var render = function() {
                   _vm.fileMedia === null
                     ? _c(
                         "span",
-                        { staticClass: "color-text-waring help-block" },
+                        { staticClass: "color-text-warring help-block" },
                         [_vm._v("Vui lòng chọn file")]
                       )
                     : _vm._e()
@@ -49888,6 +49944,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     data: function data() {
@@ -50140,9 +50199,19 @@ var render = function() {
                           ? _c("span", { staticClass: "badge badge-success" }, [
                               _vm._v("Audio ")
                             ])
-                          : _c("span", { staticClass: "badge badge-danger" }, [
+                          : _vm._e(),
+                        _vm._v(" "),
+                        category.type == "video"
+                          ? _c("span", { staticClass: "badge badge-danger" }, [
                               _vm._v("Video")
                             ])
+                          : _vm._e(),
+                        _vm._v(" "),
+                        category.type == "all"
+                          ? _c("span", { staticClass: "badge badge-info" }, [
+                              _vm._v("Hỗn hợp")
+                            ])
+                          : _vm._e()
                       ]),
                       _vm._v(" "),
                       _c("td", [
@@ -50309,6 +50378,10 @@ var render = function() {
                   _vm._v(" "),
                   _c("b-form-radio", { attrs: { value: "video" } }, [
                     _vm._v("Video")
+                  ]),
+                  _vm._v(" "),
+                  _c("b-form-radio", { attrs: { value: "all" } }, [
+                    _vm._v("Cả hai")
                   ])
                 ],
                 1
@@ -50432,6 +50505,10 @@ var render = function() {
                   _vm._v(" "),
                   _c("b-form-radio", { attrs: { value: "video" } }, [
                     _vm._v("Video")
+                  ]),
+                  _vm._v(" "),
+                  _c("b-form-radio", { attrs: { value: "all" } }, [
+                    _vm._v("Cả hai")
                   ])
                 ],
                 1

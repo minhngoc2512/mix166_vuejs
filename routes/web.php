@@ -10,7 +10,7 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
-
+Route::get('getsitemap','SiteMapController@getData');
 Route::get('cms', 'HomeController@index')->middleware('auth_cms')->name('home_cms');
 // Route::get('file/manage',function(){
 //     return view('cms.file.file_manage');

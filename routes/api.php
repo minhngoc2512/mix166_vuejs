@@ -39,4 +39,7 @@ Route::post('genre/add','Cms\GenresApiController@addGenre');
 Route::put('genre/changeStatus/{id}/{status}','Cms\GenresApiController@changeStatus');
 Route::post('genre/update','Cms\GenresApiController@update');
 Route::put('genre/delete/{id}','Cms\GenresApiController@delete');
+//File 
+Route::post('file/add','Cms\FilesApiController@addFile');
+
 
