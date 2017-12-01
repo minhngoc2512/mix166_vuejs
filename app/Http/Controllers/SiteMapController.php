@@ -17,13 +17,17 @@ class SiteMapController extends Controller
 				$getPage = file_get_contents($value->loc);
 				$getPage = str_replace("\n", "",$getPage);
 				$xmlPage=simplexml_load_string($getPage) or die("Error: Cannot create object");
-				$dataTmp .= $xmlPage->url->loc."\n";
+				foreach ($xmlPage as $key => $value) {
+					# code...
+					$dataTmp .= $value->loc."\n";
+					// echo $value->loc."<br>";
+				}
+				// 
 
 
 			}
 			# code...
 		}
-
 		// dd($xml->sitemap[0]);
 		Storage::put('avatars/1.txt', $dataTmp);
 		// $data = str_replace("\n", "",$data);
