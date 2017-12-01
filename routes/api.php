@@ -41,5 +41,6 @@ Route::post('genre/update','Cms\GenresApiController@update');
 Route::put('genre/delete/{id}','Cms\GenresApiController@delete');
 //File 
 Route::post('file/add','Cms\FilesApiController@addFile');
+Route::get('file/list','Cms\FilesApiController@getList');
 
 

@@ -47284,6 +47284,10 @@ module.exports = function spread(callback) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var disposed = false
+function injectStyle (ssrContext) {
+  if (disposed) return
+  __webpack_require__(268)
+}
 var normalizeComponent = __webpack_require__(5)
 /* script */
 var __vue_script__ = __webpack_require__(242)
@@ -47292,7 +47296,7 @@ var __vue_template__ = __webpack_require__(243)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
-var __vue_styles__ = null
+var __vue_styles__ = injectStyle
 /* scopeId */
 var __vue_scopeId__ = null
 /* moduleIdentifier (server only) */
@@ -47364,13 +47368,110 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-    data: function data() {
-        return {
-            demo: 'demo'
-        };
+  data: function data() {
+    return {
+      listFiles: []
+    };
+  },
+  mounted: function mounted() {
+    this.getList();
+  },
+
+  methods: {
+    getList: function getList() {
+      var _this = this;
+
+      window.axios.get("/api/file/list").then(function (response) {
+        _this.listFiles = response.data.listFile;
+        console.log(_this.listFiles);
+      });
     }
+  }
 });
 
 /***/ }),
@@ -47381,58 +47482,388 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _vm._m(0, false, false)
+  return _c("div", [
+    _vm._m(0, false, false),
+    _vm._v(" "),
+    _c("div", { staticClass: "container" }, [
+      _c("div", [
+        _c("div", { staticClass: "card" }, [
+          _vm._m(1, false, false),
+          _vm._v(" "),
+          _c("div", { staticClass: "card-body" }, [
+            _c("table", { staticClass: "table table-striped" }, [
+              _vm._m(2, false, false),
+              _vm._v(" "),
+              _c(
+                "tbody",
+                _vm._l(_vm.listFiles, function(itemFile) {
+                  return _c("tr", { key: itemFile.id }, [
+                    _c("td", [_vm._v(_vm._s(itemFile.id))]),
+                    _vm._v(" "),
+                    _c(
+                      "td",
+                      [
+                        _c("div", { staticClass: "col-md-12" }, [
+                          _c(
+                            "div",
+                            { staticClass: "col-md-3 float-left-img" },
+                            [
+                              _c("b-img", {
+                                staticStyle: { width: "100%" },
+                                attrs: {
+                                  thumbnail: "",
+                                  fluid: "",
+                                  src: "/storage" + itemFile.thumbnail
+                                }
+                              })
+                            ],
+                            1
+                          ),
+                          _vm._v(" "),
+                          _c(
+                            "div",
+                            { staticClass: "col-md-9 float-left-img" },
+                            [
+                              _c("div", { staticClass: "row" }, [
+                                _c("span", [
+                                  itemFile.type === "video"
+                                    ? _c("i", {
+                                        staticClass:
+                                          "text-danger fa fa-file-video-o"
+                                      })
+                                    : _vm._e(),
+                                  _vm._v(" "),
+                                  itemFile.type === "audio"
+                                    ? _c("i", {
+                                        staticClass:
+                                          "text-danger fa fa-file-audio-o"
+                                      })
+                                    : _vm._e(),
+                                  _vm._v(" "),
+                                  _c("strong", [_vm._v(_vm._s(itemFile.name))])
+                                ])
+                              ]),
+                              _vm._v(" "),
+                              _c("div", { staticClass: "row" }, [
+                                _c("span", [
+                                  _vm._v("Đăng bởi \n                    "),
+                                  _c("strong", [_vm._v(_vm._s(itemFile.user))]),
+                                  _vm._v(
+                                    "\n                        lúc  " +
+                                      _vm._s(
+                                        itemFile.created.date.slice(0, -7)
+                                      ) +
+                                      "\n                "
+                                  )
+                                ])
+                              ]),
+                              _vm._v(" "),
+                              _c("div", { staticClass: "row" }, [
+                                _c("span", [
+                                  itemFile.status === "no"
+                                    ? _c(
+                                        "span",
+                                        { staticClass: "badge badge-danger" },
+                                        [
+                                          _c("i", {
+                                            staticClass: "fa fa-info"
+                                          }),
+                                          _vm._v(" Đã ẩn")
+                                        ]
+                                      )
+                                    : _vm._e(),
+                                  _vm._v(" "),
+                                  itemFile.status === "yes"
+                                    ? _c(
+                                        "span",
+                                        { staticClass: "badge badge-success" },
+                                        [
+                                          _c("i", {
+                                            staticClass: "fa fa-info"
+                                          }),
+                                          _vm._v(" Đang hoạt động")
+                                        ]
+                                      )
+                                    : _vm._e(),
+                                  _vm._v(" "),
+                                  _vm._m(3, true, false)
+                                ])
+                              ]),
+                              _vm._v(" "),
+                              _c("div", { staticClass: "row" }, [
+                                _c(
+                                  "span",
+                                  { staticClass: "text-black text-sm" },
+                                  [
+                                    _c("a", { attrs: { href: "#" } }, [
+                                      _vm._v("Thay đổi trạng thái ")
+                                    ]),
+                                    _vm._v(
+                                      " \n                        ¦\n                        "
+                                    ),
+                                    _c(
+                                      "a",
+                                      {
+                                        directives: [
+                                          {
+                                            name: "b-modal",
+                                            rawName: "v-b-modal",
+                                            value: "play" + itemFile.id,
+                                            expression: "'play' + itemFile.id"
+                                          }
+                                        ],
+                                        attrs: { href: "#" }
+                                      },
+                                      [
+                                        _c("span", {
+                                          staticClass:
+                                            "text-success fa fa-play-circle-o"
+                                        }),
+                                        _vm._v(
+                                          " Xem nhanh\n                    "
+                                        )
+                                      ]
+                                    ),
+                                    _vm._v(" ¦ "),
+                                    _vm._m(4, true, false)
+                                  ]
+                                )
+                              ]),
+                              _vm._v(" "),
+                              _c("div", { staticClass: "row" })
+                            ]
+                          )
+                        ]),
+                        _vm._v(" "),
+                        _c(
+                          "b-modal",
+                          {
+                            attrs: {
+                              id: "play" + itemFile.id,
+                              "hide-footer": "",
+                              title: itemFile.name
+                            }
+                          },
+                          [
+                            itemFile.type === "audio"
+                              ? _c(
+                                  "audio",
+                                  {
+                                    staticStyle: { width: "100%" },
+                                    attrs: { controls: "" }
+                                  },
+                                  [
+                                    _c("source", {
+                                      attrs: {
+                                        src:
+                                          itemFile.path.search("http") === -1
+                                            ? "/storage" + itemFile.path
+                                            : itemFile.path,
+                                        type: "audio/ogg"
+                                      }
+                                    }),
+                                    _vm._v(" "),
+                                    _c("source", {
+                                      attrs: {
+                                        src:
+                                          itemFile.path.search("http") === -1
+                                            ? "/storage" + itemFile.path
+                                            : itemFile.path,
+                                        type: "audio/mpeg"
+                                      }
+                                    }),
+                                    _vm._v(
+                                      "\n                      Your browser does not support the audio tag.\n                    "
+                                    )
+                                  ]
+                                )
+                              : _vm._e(),
+                            _vm._v(" "),
+                            itemFile.type === "video"
+                              ? _c(
+                                  "video",
+                                  {
+                                    attrs: {
+                                      width: "100%",
+                                      height: "auto",
+                                      controls: ""
+                                    }
+                                  },
+                                  [
+                                    _c("source", {
+                                      attrs: {
+                                        src:
+                                          itemFile.path.search("http") === -1
+                                            ? "/storage" + itemFile.path
+                                            : itemFile.path,
+                                        type: "video/mp4"
+                                      }
+                                    }),
+                                    _vm._v(" "),
+                                    _c("source", {
+                                      attrs: {
+                                        src:
+                                          itemFile.path.search("http") === -1
+                                            ? "/storage" + itemFile.path
+                                            : itemFile.path,
+                                        type: "video/ogg"
+                                      }
+                                    }),
+                                    _vm._v(
+                                      "\n                      Your browser does not support the video tag.\n                    "
+                                    )
+                                  ]
+                                )
+                              : _vm._e()
+                          ]
+                        )
+                      ],
+                      1
+                    ),
+                    _vm._v(" "),
+                    _c("td", [_vm._v(_vm._s(itemFile.category))]),
+                    _vm._v(" "),
+                    _c("td", [
+                      _vm._v(
+                        "\n              " +
+                          _vm._s(itemFile.view) +
+                          "\n            "
+                      )
+                    ])
+                  ])
+                })
+              )
+            ]),
+            _vm._v(" "),
+            _vm._m(5, false, false)
+          ])
+        ])
+      ])
+    ])
+  ])
 }
 var staticRenderFns = [
   function() {
     var _vm = this
     var _h = _vm.$createElement
     var _c = _vm._self._c || _h
-    return _c("div", [
-      _c("ol", { staticClass: "breadcrumb" }, [
-        _c("li", { staticClass: "breadcrumb-item" }, [_vm._v("Home")]),
+    return _c("ol", { staticClass: "breadcrumb" }, [
+      _c("li", { staticClass: "breadcrumb-item" }, [_vm._v("Home")]),
+      _vm._v(" "),
+      _c("li", { staticClass: "breadcrumb-item" }, [
+        _c("a", { attrs: { href: "#" } }, [_vm._v("Admin")])
+      ]),
+      _vm._v(" "),
+      _c("li", { staticClass: "breadcrumb-item active" }, [
+        _vm._v("Dashboard")
+      ]),
+      _vm._v(" "),
+      _c("li", { staticClass: "breadcrumb-menu d-md-down-none" }, [
+        _c(
+          "div",
+          {
+            staticClass: "btn-group",
+            attrs: { role: "group", "aria-label": "Button group" }
+          },
+          [
+            _c("a", { staticClass: "btn", attrs: { href: "#" } }, [
+              _c("i", { staticClass: "icon-speech" })
+            ]),
+            _vm._v(" "),
+            _c("a", { staticClass: "btn", attrs: { href: "./" } }, [
+              _c("i", { staticClass: "icon-graph" }),
+              _vm._v("  Dashboard")
+            ]),
+            _vm._v(" "),
+            _c("a", { staticClass: "btn", attrs: { href: "#" } }, [
+              _c("i", { staticClass: "icon-settings" }),
+              _vm._v("  Settings")
+            ])
+          ]
+        )
+      ])
+    ])
+  },
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("div", { staticClass: "card-header" }, [
+      _c("i", { staticClass: "fa fa-align-justify" }),
+      _vm._v(" Striped Table\n    ")
+    ])
+  },
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("thead", [
+      _c("tr", [
+        _c("th", [_vm._v("#ID")]),
         _vm._v(" "),
-        _c("li", { staticClass: "breadcrumb-item" }, [
-          _c("a", { attrs: { href: "#" } }, [_vm._v("Admin")])
-        ]),
+        _c("th", [_vm._v("Chi tiết")]),
         _vm._v(" "),
-        _c("li", { staticClass: "breadcrumb-item active" }, [
-          _vm._v("Dashboard")
-        ]),
+        _c("th", [_vm._v("Chuyên mục")]),
         _vm._v(" "),
-        _c("li", { staticClass: "breadcrumb-menu d-md-down-none" }, [
-          _c(
-            "div",
-            {
-              staticClass: "btn-group",
-              attrs: { role: "group", "aria-label": "Button group" }
-            },
-            [
-              _c("a", { staticClass: "btn", attrs: { href: "#" } }, [
-                _c("i", { staticClass: "icon-speech" })
-              ]),
-              _vm._v(" "),
-              _c("a", { staticClass: "btn", attrs: { href: "./" } }, [
-                _c("i", { staticClass: "icon-graph" }),
-                _vm._v("  Dashboard")
-              ]),
-              _vm._v(" "),
-              _c("a", { staticClass: "btn", attrs: { href: "#" } }, [
-                _c("i", { staticClass: "icon-settings" }),
-                _vm._v("  Settings")
-              ])
-            ]
-          )
+        _c("th", [_vm._v("Lượt view")])
+      ])
+    ])
+  },
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("a", { staticClass: "more-info", attrs: { href: "#" } }, [
+      _c("i", { staticClass: "fafa-ellipsis-h" })
+    ])
+  },
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("a", { attrs: { href: "#" } }, [
+      _c("span", { staticClass: " text-danger fa fa-pencil-square-o" }),
+      _vm._v(" Sửa file\n                    ")
+    ])
+  },
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("ul", { staticClass: "pagination" }, [
+      _c("li", { staticClass: "page-item" }, [
+        _c("a", { staticClass: "page-link", attrs: { href: "#" } }, [
+          _vm._v("Prev")
         ])
       ]),
       _vm._v(" "),
-      _c("div", { staticClass: "container" }, [
-        _c("div", { staticClass: "card" }, [
-          _c("div", { staticClass: "card-header" }, [
-            _vm._v("\n            demo card\n        ")
-          ]),
-          _vm._v(" "),
-          _c("div", { staticClass: "card-block" })
+      _c("li", { staticClass: "page-item active" }, [
+        _c("a", { staticClass: "page-link", attrs: { href: "#" } }, [
+          _vm._v("1")
+        ])
+      ]),
+      _vm._v(" "),
+      _c("li", { staticClass: "page-item" }, [
+        _c("a", { staticClass: "page-link", attrs: { href: "#" } }, [
+          _vm._v("2")
+        ])
+      ]),
+      _vm._v(" "),
+      _c("li", { staticClass: "page-item" }, [
+        _c("a", { staticClass: "page-link", attrs: { href: "#" } }, [
+          _vm._v("3")
+        ])
+      ]),
+      _vm._v(" "),
+      _c("li", { staticClass: "page-item" }, [
+        _c("a", { staticClass: "page-link", attrs: { href: "#" } }, [
+          _vm._v("4")
+        ])
+      ]),
+      _vm._v(" "),
+      _c("li", { staticClass: "page-item" }, [
+        _c("a", { staticClass: "page-link", attrs: { href: "#" } }, [
+          _vm._v("Next")
         ])
       ])
     ])
@@ -47721,49 +48152,57 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
       });
     },
     submitFile: function submitFile() {
-      if (this.typeFileInput === "file") {
-        if (this.name === "" || this.thumbnail === null || this.category === "" || this.genre === "" || this.artist === "" || this.fileMedia === null) {
-          this.$swal({
-            title: "Error...",
-            text: "Vui lòng điền đầy đủ thông tin!",
-            type: "error"
-          });
-        } else {
-          var formData = new FormData();
-          formData.append("name", this.name);
-          formData.append("typeFile", this.typeFile);
-          formData.append("thumbnail", this.thumbnail);
-          formData.append("category", this.category.id);
-          formData.append("genre", this.genre);
-          formData.append("artist", this.artist);
-          formData.append("status", this.status);
-          formData.append("file", this.fileMedia);
-          formData.append("user", window.cms.auth);
-          formData.append("typeFileInput", this.typeFileInput);
-          var request = new XMLHttpRequest();
-          request.onreadystatechange = function () {
-            if (this.status == 200) {
-              console.log(" up file ok");
-            }
-          };
-          request.open("POST", "/api/file/add");
-          request.send(formData);
-        }
-      } else {
-        if (this.name === "" || this.thunbnail === null || this.category === "" || this.genre === "" || this.artist === "" || this.url === null) {
-          this.$swal({
-            title: "Error...",
-            text: "Vui lòng điền đầy đủ thông tin!",
-            type: "error"
-          });
-        } else {
-          this.$swal({
-            title: "Ok",
-            text: "Thêm file thành công!",
-            type: "info"
-          });
-        }
+      if (this.name === "" || this.thumbnail === null || this.category === "" || this.genre === "" || this.artist === "") {
+        this.$swal({
+          title: "Error...",
+          text: "Vui lòng điền đầy đủ thông tin!",
+          type: "error"
+        });
+
+        return;
       }
+      var formData = new FormData();
+      formData.append("name", this.name);
+      formData.append("typeFile", this.typeFile);
+      formData.append("thumbnail", this.thumbnail);
+      formData.append("category", this.category.id);
+      formData.append("genre", this.genre);
+      formData.append("artist", this.artist);
+      formData.append("status", this.status);
+      formData.append("user", window.cms.auth);
+      formData.append("typeFileInput", this.typeFileInput);
+      if (this.typeFileInput === "file") {
+        if (this.fileMedia === null) {
+          this.$swal({
+            title: "Error...",
+            text: "Vui lòng chèn file!",
+            type: "error"
+          });
+          return;
+        }
+        formData.append("file", this.fileMedia);
+      } else if (this.typeFileInput === "url") {
+        if (this.url === "") {
+          this.$swal({
+            title: "Error...",
+            text: "Vui lòng chèn url!",
+            type: "error"
+          });
+          return;
+        }
+        formData.append("url", this.url);
+      } else {
+        return;
+      }
+      var request = new XMLHttpRequest();
+      request.onreadystatechange = function () {
+        if (this.status == 200) {
+          console.log(" up file ok");
+        }
+      }.bind(statusSubmit);
+      request.open("POST", "/api/file/add");
+      request.send(formData);
+      this.resetForm();
     },
     onThumbnailChange: function onThumbnailChange(e) {
       var files = e.target.files || e.dataTransfer.files;
@@ -51461,6 +51900,52 @@ if (false) {
 /***/ (function(module, exports) {
 
 // removed by extract-text-webpack-plugin
+
+/***/ }),
+/* 262 */,
+/* 263 */,
+/* 264 */,
+/* 265 */,
+/* 266 */,
+/* 267 */,
+/* 268 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(269);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(9)("00a98f82", content, false);
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-674c15de\",\"scoped\":false,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0&bustCache!./manage.vue", function() {
+     var newContent = require("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-674c15de\",\"scoped\":false,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0&bustCache!./manage.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 269 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(7)(undefined);
+// imports
+
+
+// module
+exports.push([module.i, "\n.float-left-img {\n  float: left;\n}\n", ""]);
+
+// exports
+
 
 /***/ })
 /******/ ]);

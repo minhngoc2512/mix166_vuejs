@@ -8,6 +8,7 @@ use App\File;
 use App\Artist;
 use App\Genre;
 use App\Category;
+use App\User;
 use Storage;
 use Carbon\Carbon;
 
@@ -51,7 +52,59 @@ class FilesApiController extends Controller
         $file_db->save();
     }
     function getList(){
+        $categories = Category::all();
+        $categories_map = collect([]);
+        $categories->map(function($item)use($categories_map){
+            $categories_map->put($item->id,$item->name);
+        });
+        $genres = Genre::all();
+        $genres_map = collect([]);
+        $genres->map(function($item) use($genres_map){
+            $genres_map->put($item->id,$item->name);
+        });
+        // dd($genres_map);
+        $artists = Artist::all();
+        $artists_map = collect([]);
+        $artists->map(function($item) use($artists_map){
+            $artists_map->put($item->id,$item->name);
+        });
+        $users = User::all();
+        $users_map = collect([]);
+        $users->map(function($item) use($users_map){
+            $users_map->put($item->id,$item->name);
+        });
         $file = File::paginate(10);
+        $fileMap = $file->map(function($item) use($categories_map,$genres_map,$artists_map,$users_map){
+            return [
+                "id"=>$item->id,
+                "name"=>$item->name,
+                "status"=>$item->status,
+                "type"=>$item->type,
+                "category"=>$categories_map[$item->category_id],
+                "genre"=>$genres_map[$item->genre_id],
+                "artist"=>$artists_map[$item->artist_id],
+                "user"=>$users_map[$item->user_create_id],
+                "path"=>$item->path,
+                "thumbnail"=>$item->thumbnail,
+                "view"=>$item->file_view,
+                "created"=>$item->created_at
+            ];
+        });
+        $file = collect($file);
+        return [
+            "listFile"=>$fileMap,
+            "paginate"=>[
+
+                "current_page_url"=>$file['current_page'],
+                "first_page_url"=>$file['first_page_url'],
+                "last_page"=>$file['last_page'],
+                "last_page_url"=>$file['last_page_url'],
+                "next_page_url"=>$file['next_page_url'],
+                "per_page"=>$file['per_page'],
+                "prev_page_url"=>$file['prev_page_url'],
+                "total"=>$file['total']
+            ]
+        ];
 
     }
 

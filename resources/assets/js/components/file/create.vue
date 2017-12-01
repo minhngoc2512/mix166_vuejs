@@ -167,63 +167,63 @@ export default {
       });
     },
     submitFile() {
-      if (this.typeFileInput === "file") {
-        if (
-          this.name === "" ||
-          this.thumbnail === null ||
-          this.category === "" ||
-          this.genre === "" ||
-          this.artist === "" ||
-          this.fileMedia === null
-        ) {
-          this.$swal({
-            title: "Error...",
-            text: "Vui lòng điền đầy đủ thông tin!",
-            type: "error"
-          });
-        } else {
-          var formData = new FormData();
-          formData.append("name", this.name);
-          formData.append("typeFile", this.typeFile);
-          formData.append("thumbnail", this.thumbnail);
-          formData.append("category", this.category.id);
-          formData.append("genre", this.genre);
-          formData.append("artist", this.artist);
-          formData.append("status", this.status);
-          formData.append("file", this.fileMedia);
-          formData.append("user", window.cms.auth);
-          formData.append("typeFileInput", this.typeFileInput);
-          var request = new XMLHttpRequest();
-          request.onreadystatechange = function() {
-            if (this.status == 200) {
-              console.log(" up file ok");
-            }
-          };
-          request.open("POST", "/api/file/add");
-          request.send(formData);
-        }
-      } else {
-        if (
-          this.name === "" ||
-          this.thunbnail === null ||
-          this.category === "" ||
-          this.genre === "" ||
-          this.artist === "" ||
-          this.url === null
-        ) {
-          this.$swal({
-            title: "Error...",
-            text: "Vui lòng điền đầy đủ thông tin!",
-            type: "error"
-          });
-        } else {
-          this.$swal({
-            title: "Ok",
-            text: "Thêm file thành công!",
-            type: "info"
-          });
-        }
+      if (
+        this.name === "" ||
+        this.thumbnail === null ||
+        this.category === "" ||
+        this.genre === "" ||
+        this.artist === ""
+      ) {
+        this.$swal({
+          title: "Error...",
+          text: "Vui lòng điền đầy đủ thông tin!",
+          type: "error"
+        });
+
+        return;
       }
+      var formData = new FormData();
+      formData.append("name", this.name);
+      formData.append("typeFile", this.typeFile);
+      formData.append("thumbnail", this.thumbnail);
+      formData.append("category", this.category.id);
+      formData.append("genre", this.genre);
+      formData.append("artist", this.artist);
+      formData.append("status", this.status);
+      formData.append("user", window.cms.auth);
+      formData.append("typeFileInput", this.typeFileInput);
+      if (this.typeFileInput === "file") {
+        if (this.fileMedia === null) {
+          this.$swal({
+            title: "Error...",
+            text: "Vui lòng chèn file!",
+            type: "error"
+          });
+          return;
+        }
+        formData.append("file", this.fileMedia);
+      } else if (this.typeFileInput === "url") {
+        if (this.url === "") {
+          this.$swal({
+            title: "Error...",
+            text: "Vui lòng chèn url!",
+            type: "error"
+          });
+          return;
+        }
+        formData.append("url", this.url);
+      } else {
+        return;
+      }
+      var request = new XMLHttpRequest();
+      request.onreadystatechange = function() {
+        if (this.status == 200) {
+          console.log(" up file ok");
+        }
+      }.bind(statusSubmit);
+      request.open("POST", "/api/file/add");
+      request.send(formData);
+      this.resetForm();
     },
     onThumbnailChange(e) {
       let files = e.target.files || e.dataTransfer.files;

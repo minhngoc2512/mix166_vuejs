@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cms;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\File;
 
 class FilesController extends Controller
 {
@@ -11,6 +12,7 @@ class FilesController extends Controller
         return view('cms.file.file_manage');
     }
     public function createFile(){
+  
         return view('cms.file.file_create');
     }
     //
