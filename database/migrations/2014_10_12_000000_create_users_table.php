@@ -21,6 +21,7 @@ class CreateUsersTable extends Migration
             $table->integer('role_id');
             $table->string('password');
             $table->integer('status')->default(0);
+            $table->string('api_token', 60)->unique();
             $table->rememberToken();
             $table->softDeletes();
             $table->timestamps();

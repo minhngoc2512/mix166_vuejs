@@ -171,7 +171,8 @@
 	<script>
 		window.cms ={
         "csrfToken": "{{csrf_token()}}",
-        "auth":'["{{Auth::user()->id}}","{{Auth::user()->name}}"]'
+        "auth":'["{{Auth::user()->id}}","{{Auth::user()->name}}"]',
+		"api_token": "{{Auth::user()->api_token}}"
     }
 	</script>
 

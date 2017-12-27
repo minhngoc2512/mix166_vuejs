@@ -15,6 +15,9 @@ Route::get('cms', 'HomeController@index')->middleware('auth_cms')->name('home_cm
 // Route::get('file/manage',function(){
 //     return view('cms.file.file_manage');
 // })->middleware('auth_cms')->name('file_manage');
+Route::get('login',function(){
+    return redirect()->route('login_cms');
+})->name('login');
 Route::get('cms/user/logout','Cms\Auth\LoginController@logoutUser')->name('logout');
 Route::get('cms/user/login','Cms\Auth\LoginController@showFormLogin')->name('login_cms');
 Route::post('cms/user/login',['as'=>'cms.user.check.login','uses'=>'Cms\Auth\LoginController@checkLogin']);

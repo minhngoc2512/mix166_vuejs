@@ -18719,7 +18719,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_vue_sweetalert___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_4_vue_sweetalert__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_sweetalert2_dist_sweetalert2_css__ = __webpack_require__(220);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_sweetalert2_dist_sweetalert2_css___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_5_sweetalert2_dist_sweetalert2_css__);
-
 /**
  * First we will load all of this project's JavaScript dependencies which
  * includes Vue and other libraries. It is a great starting point when
@@ -18738,8 +18737,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 window.axios = __webpack_require__(222);
 
 window.axios.defaults.headers.common = {
-  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-  'X-Requested-With': 'XMLHttpRequest'
+  "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content"),
+  "X-Requested-With": "XMLHttpRequest",
+  Authorization: "Bearer " + window.cms.api_token
 };
 
 // Vue.use(VueResource)
@@ -18754,21 +18754,21 @@ __WEBPACK_IMPORTED_MODULE_0_vue___default.a.use(__WEBPACK_IMPORTED_MODULE_4_vue_
  * or customize the JavaScript scaffolding to fit your unique needs.
  */
 //File Manage
-__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component('list_file', __webpack_require__(241));
-__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component('create_file', __webpack_require__(246));
+__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_file", __webpack_require__(241));
+__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("create_file", __webpack_require__(246));
 
 //User Manager
 
-__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component('list_user', __webpack_require__(251));
+__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_user", __webpack_require__(251));
 
 //Artist
-__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component('list_artist', __webpack_require__(254));
-//Category 
-__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component('list_category', __webpack_require__(257));
+__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_artist", __webpack_require__(254));
+//Category
+__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_category", __webpack_require__(257));
 //Genre
-__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component('list_genre', __webpack_require__(260));
+__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_genre", __webpack_require__(260));
 var app = new __WEBPACK_IMPORTED_MODULE_0_vue___default.a({
-  el: '#app'
+  el: "#app"
 });
 
 /***/ }),
