@@ -15,5 +15,9 @@ class FilesController extends Controller
   
         return view('cms.file.file_create');
     }
+    public function editFile($id){
+        return view('cms.file.file_edit',['id'=>$id]);
+
+    }
     //
 }

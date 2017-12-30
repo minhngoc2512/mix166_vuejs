@@ -62,7 +62,6 @@ class FilesApiController extends Controller
         $genres->map(function($item) use($genres_map){
             $genres_map->put($item->id,$item->name);
         });
-        // dd($genres_map);
         $artists = Artist::all();
         $artists_map = collect([]);
         $artists->map(function($item) use($artists_map){
@@ -73,7 +72,7 @@ class FilesApiController extends Controller
         $users->map(function($item) use($users_map){
             $users_map->put($item->id,$item->name);
         });
-        $file = File::paginate(10);
+        $file = File::orderBy('created_at','DESC')->paginate(10);
         $fileMap = $file->map(function($item) use($categories_map,$genres_map,$artists_map,$users_map){
             return [
                 "id"=>$item->id,
@@ -94,7 +93,6 @@ class FilesApiController extends Controller
         return [
             "listFile"=>$fileMap,
             "paginate"=>[
-
                 "current_page_url"=>$file['current_page'],
                 "first_page_url"=>$file['first_page_url'],
                 "last_page"=>$file['last_page'],
@@ -109,14 +107,59 @@ class FilesApiController extends Controller
     }
 
     function getFormAdd(){
-        $artists = Artist::all();
-        $genres = Genre::all();
-        $categories = Category::all();
+        $artists = Artist::orderBy('created_at','DESC')->get();
+        $genres = Genre::orderBy('created_at','DESC')->get();
+        $categories = Category::orderBy('created_at','DESC')->get();
         return [
             'artists'=>$artists,
             'genres'=>$genres,
             'categories'=>$categories
         ];
+    }
+    function deleteFile($id){
+        $file = File::find($id);
+        if($file->delete()){
+            return [
+                'status'=>'ok'
+            ];
+        }else{
+            return ['status'=>'error'];
+        }
+
+    }
+    function changeStatus($id,$status){
+        $file = File::find($id);
+        $status=='yes'?$file->status='no':$file->status='yes';
+        $file->save();
+        return ['status'=>'ok'];
+    }
+
+    function getInformationFile($id){
+        $file = File::find($id);
+        if($file){
+            $categories = Category::all();
+            $categories_map = collect([]);
+            $categories->map(function($item)use($categories_map){
+                $categories_map->put($item->id,$item->name);
+            });
+            $genres = Genre::all();
+            $genres_map = collect([]);
+            $genres->map(function($item) use($genres_map){
+                $genres_map->put($item->id,$item->name);
+            });
+            $artists = Artist::all();
+            $artists_map = collect([]);
+            $artists->map(function($item) use($artists_map){
+                $artists_map->put($item->id,$item->name);
+            });
+            return [
+                'categories'=>$categories,
+                'genres'=>$genres,
+                'artists'=>$artists,
+                'file'=>$file
+            ];
+        }
+        return about(404);
     }
     //
 }

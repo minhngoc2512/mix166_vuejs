@@ -39,6 +39,7 @@ Route::prefix('cms')->middleware('auth_cms')->group(function(){
     Route::prefix('file')->group(function(){
         Route::get('list','Cms\FilesController@getList')->name('list_file');
         Route::get('create','Cms\FilesController@createFile')->name('create_file');
+        Route::get('edit/{id}','Cms\FilesController@editFile')->name('edit_file');
     });
 });
 

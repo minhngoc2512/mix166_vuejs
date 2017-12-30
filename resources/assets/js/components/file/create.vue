@@ -23,19 +23,19 @@
                 <div class="card-body">
                     <form action="" method="post">
                         <div class="form-group">
-                            <label for="nf-email">Tên file</label>
+                            <label >Tên file</label>
                             <input type="text" v-model="name" class="form-control" placeholder="Nhập tên file..">
                             <span class="color-text-warring help-block" v-if="name ==='' ">Vui lòng nhập tên file</span>
                         </div>
                         <div class="form-group">
-                            <label for="nf-email" v-if="thumbnailShow === null">Chọn ảnh cho file</label>
+                            <label  v-if="thumbnailShow === null">Chọn ảnh cho file</label>
                                <img :src="thumbnailShow" class="img-thumbnail" style="margin-bottom: 20px" alt="Cinque Terre" width="200" height="200" v-if="thumbnailShow !== null">
-                           
+
                             <input type="file" name="thumnail" v-on:change="onThumbnailChange" class="form-control">
                             <span class="help-block color-text-warring"  v-if="thumbnailShow === null">Vui lòng chọn ảnh cho file tải lên</span>
                         </div>
                         <div class="form-group">
-                            <label for="nf-email">Trạng thái hoạt động</label>
+                            <label >Trạng thái hoạt động</label>
                             <label class="switch switch-lg switch-3d switch-primary">
                                 <input type="checkbox" v-model="status" class="switch-input" checked="">
                                 <span class="switch-label"></span>
@@ -43,8 +43,8 @@
                             </label>
                         </div>
                         <div class="form-group">
-                            <label for="nf-email">Chuyên mục</label>
-                           <select class="form-control" id="ccyear" v-model="category">
+                            <label >Chuyên mục</label>
+                           <select class="form-control" v-model="category">
                                 <option value="">Chọn chuyên mục</option>
 
                                 <option v-for="itemCategory in listCategories" :key="itemCategory.id" :value="itemCategory">{{itemCategory.name}}</option>
@@ -52,23 +52,23 @@
                             <span class="color-text-warring help-block" v-if="category===''">Vui lòng chọn chuyên mục</span>
                         </div>
                         <div class="form-group">
-                            <label for="nf-email">Thể loại</label>
-                           <select class="form-control" id="ccyear" v-model="genre">
+                            <label >Thể loại</label>
+                           <select class="form-control" v-model="genre">
                                 <option value="">Chọn thể  loại</option>
                                 <option v-for="itemGenre in listGenres" :key="itemGenre.id" :value="itemGenre.id">{{itemGenre.name}}</option>
                             </select>
                             <span class="color-text-warring help-block" v-if="genre===''">Vui lòng chọn thể loại</span>
                         </div>
                          <div class="form-group">
-                            <label for="nf-email">Nghệ sĩ</label>
-                           <select class="form-control" id="ccyear" v-model="artist">
+                            <label >Nghệ sĩ</label>
+                           <select class="form-control" v-model="artist">
                                 <option value="">Chọn nghệ sĩ</option>
                                 <option v-for="itemArtist in listArtists" :key="itemArtist.id" :value="itemArtist.id">{{itemArtist.name}}</option>
                             </select>
                             <span class="color-text-warring help-block" v-if="artist===''">Vui lòng chọn nghệ sĩ</span>
                         </div>
                         <div class="form-group" v-if="statusTypeFile!==''">
-                            <label for="nf-email">Định dạng file</label>
+                            <label >Định dạng file</label>
                                 <span class="badge badge-success" v-if="statusTypeFile =='audio'">Audio </span>
                                 <span class="badge badge-danger" v-if="statusTypeFile =='video'">Video</span>
                                 <b-form-radio-group id="radios2" v-model="typeFile" v-if="statusTypeFile=='all'" name="radioSubComponent">
@@ -78,19 +78,19 @@
                                  <span class="color-text-warring help-block" v-if=" typeFile==='' ">Vui lòng chọn kiểu file</span>
                         </div>
                         <div class="form-group">
-                            <label for="nf-email">Kiểu dữ liệu nhập vào</label>
+                            <label >Kiểu dữ liệu nhập vào</label>
                             <b-form-radio-group id="radios3" v-model="typeFileInput" name="radioFileInput">
                                 <b-form-radio value="url">Nhập Url</b-form-radio>
                                 <b-form-radio value="file">Upload file</b-form-radio>
                             </b-form-radio-group>
                         </div>
                         <div class="form-group" v-if="typeFileInput=== 'url' ">
-                            <label for="nf-email">Nhập url của file</label>
+                            <label >Nhập url của file</label>
                             <input type="text" v-model="url" class="form-control" placeholder="Nhập url file vào đây...">
                             <span class="color-text-warring help-block" v-if="url===''">Vui lòng nhập url file</span>
                         </div>
                          <div class="form-group" v-else>
-                            <label for="nf-email">Chọn file</label>
+                            <label >Chọn file</label>
                             <input type="file" v-on:change="onFileChange" name="fileinput" class="form-control">
                             <span class="color-text-warring help-block" v-if=" fileMedia===null ">Vui lòng chọn file</span>
                         </div>
@@ -220,10 +220,11 @@ export default {
         if (this.status == 200) {
           console.log(" up file ok");
         }
-      }.bind(statusSubmit);
+      }.bind(this);
       request.open("POST", "/api/file/add");
+      request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
       request.send(formData);
-      this.resetForm();
+      window.location = "/cms/file/list";
     },
     onThumbnailChange(e) {
       let files = e.target.files || e.dataTransfer.files;

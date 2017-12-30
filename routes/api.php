@@ -42,5 +42,8 @@ Route::put('genre/delete/{id}','Cms\GenresApiController@delete')->middleware('au
 //File 
 Route::post('file/add','Cms\FilesApiController@addFile')->middleware('auth:api');
 Route::get('file/list','Cms\FilesApiController@getList')->middleware('auth:api');
+Route::put('file/delete/{id}','Cms\FilesApiController@deleteFile')->middleware('auth:api');
+Route::put('file/changeStatus/{id}/{status}','Cms\FilesApiController@changeStatus')->middleware('auth:api');
+Route::put('file/edit/get-information/{id}','Cms\FilesApiController@getInformationFile')->middleware('auth:api');
 
 

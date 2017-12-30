@@ -37,7 +37,7 @@ Vue.use(VueSweetAlert);
 //File Manage
 Vue.component("list_file", require("./components/file/manage.vue"));
 Vue.component("create_file", require("./components/file/create.vue"));
-
+Vue.component("edit_file", require("./components/file/edit.vue"));
 //User Manager
 
 Vue.component("list_user", require("./components/user/list.vue"));

@@ -28,6 +28,7 @@ class AuthenticateCms
             Auth::logout();
             return redirect('cms/user/login');
             }
+//            dd('cache');
             if(Cache::has('users'.Auth::user()->id)){
                 return $next($request);
             }

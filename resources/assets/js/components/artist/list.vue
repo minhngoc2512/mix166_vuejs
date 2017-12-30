@@ -178,8 +178,10 @@
                 var formData = new FormData();
                 formData.append("name", this.name);
                 formData.append('image', this.image[0]);
+
                 formData.append('status', this.status);
                 formData.append('user', window.cms.auth);
+
                 var request = new XMLHttpRequest();
                 request.onreadystatechange = function () {
                     if (this.readyState == 4 && this.status == 200) {
@@ -187,6 +189,7 @@
                     }
                 };
                 request.open("POST", "/api/artist/add");
+                request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
                 request.send(formData);
                 this.$swal({
                     title: 'Ok',
@@ -271,6 +274,7 @@
 
                 };
                 request.open("POST", "/api/artist/update");
+                request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
                 request.send(formData);
                 this.$swal({
                     title: 'Ok',
@@ -338,7 +342,7 @@
                                 text: "Xóa thành công !",
                                 type: 'success'
                             });
-                            this.getList();
+                            this.getListArtist();
                         }
                     });
                 }.bind(this));
