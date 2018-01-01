@@ -110,124 +110,129 @@ export default {
   data() {
     return {
       listFiles: [],
-        currentPage : 1,
-        paginate: null,
-        total: 0,
-        per_page:0
-    }
+      currentPage: 1,
+      paginate: null,
+      total: 0,
+      per_page: 0
+    };
   },
-  watch:{
-      currentPage:function(){
-          this.getList(this.currentPage);
-      }
-
+  watch: {
+    currentPage: function() {
+      this.getList(this.currentPage);
+    }
   },
   mounted() {
     this.getList();
     this.statusFileUpdate();
   },
   methods: {
-
-      statusFileUpdate(){
-          if(Cookies.get('statusUpdateFile')){
-                  this.$swal({
-                          title: 'Ok',
-                          text: "Cập nhật file thành công!",
-                          type: 'success'
-                      });
-                      Cookies.remove('statusUpdateFile');
-                      return;
-          }
-          return;
-      },
-    getList(page=0){
-        if(page !== 0){
-            window.axios.get("/api/file/list?page="+this.currentPage).then(response => {
-                this.listFiles = response.data.listFile;
-                this.paginate = response.data.paginate;
-                this.currentPage = this.paginate.current_page_url;
-                this.total = this.paginate.total;
-                this.per_page = this.paginate.per_page;
-            });
-        }else {
-            window.axios.get("/api/file/list").then(response => {
-                this.listFiles = response.data.listFile;
-                this.paginate = response.data.paginate;
-                this.currentPage = this.paginate.current_page_url;
-                this.total = this.paginate.total;
-                this.per_page = this.paginate.per_page;
-            });
-        }
-    },
-      deleteFile(id){
-          this.$swal(
-              {
-                  html: '<strong class="text-danger"><i class="fa fa-info"></i>Bạn đồng ý xóa  ?</strong>',
-                  showCancelButton: true,
-                  confirmButtonText: '<i class="fa fa-check-square"></i> Xác nhận!',
-                  showLoaderOnConfirm: true,
-                  preConfirm: function (text) {
-                      return new Promise(function (resolve, reject) {
-                          resolve()
-                      });
-                  },
-                  allowOutsideClick: false
-              }).then(function () {
-              window.axios.put('/api/file/delete/' + id).then(response => {
-                  let status = response.data.status;
-
-                  if (status==='error'||response.data.error) {
-                      this.$swal({
-                          title: 'Error...',
-                          text: 'Xóa không thành công',
-                          type: response.data.error
-                      });
-                  } else {
-                      this.$swal({
-                          title: 'Ok',
-                          text: "Xóa thành công !",
-                          type: 'success'
-                      });
-                      this.getList();
-                  }
-              });
-          }.bind(this));
-      },
-      changeStatus(id,status){
-          this.$swal(
-              {
-                  html: '<strong class="text-danger"><i class="fa fa-info"></i>Bạn đồng ý thay đổi trạng thái?  ?</strong>',
-                  showCancelButton: true,
-                  confirmButtonText: '<i class="fa fa-check-square"></i> Xác nhận!',
-                  showLoaderOnConfirm: true,
-                  preConfirm: function (text) {
-                      return new Promise(function (resolve, reject) {
-                          resolve()
-                      });
-                  },
-                  allowOutsideClick: false
-              }).then(function () {
-              window.axios.put('/api/file/changeStatus/' + id+'/'+status).then(response => {
-                  let status = response.data.status;
-
-                  if (status==='error'||response.data.error) {
-                      this.$swal({
-                          title: 'Error...',
-                          text: 'Thay đổi trạng thái không thành công',
-                          type: response.data.error
-                      });
-                  } else {
-                      this.$swal({
-                          title: 'Ok',
-                          text: "Thay đổi trạng thái thành công !",
-                          type: 'success'
-                      });
-                      this.getList();
-                  }
-              });
-          }.bind(this));
-
+    statusFileUpdate() {
+      if (Cookies.get("statusUpdateFile")) {
+        this.$swal({
+          title: "Ok",
+          text: "Cập nhật file thành công!",
+          type: "success"
+        });
+        Cookies.remove("statusUpdateFile");
+        return;
       }
+      return;
+    },
+    getList(page = 0) {
+      if (page !== 0) {
+        window.axios
+          .get("/api/file/list?page=" + this.currentPage)
+          .then(response => {
+            this.listFiles = response.data.listFile;
+            this.paginate = response.data.paginate;
+            this.currentPage = this.paginate.current_page_url;
+            this.total = this.paginate.total;
+            this.per_page = this.paginate.per_page;
+          });
+      } else {
+        window.axios.get("/api/file/list").then(response => {
+          this.listFiles = response.data.listFile;
+          this.paginate = response.data.paginate;
+          this.currentPage = this.paginate.current_page_url;
+          this.total = this.paginate.total;
+          this.per_page = this.paginate.per_page;
+        });
+      }
+    },
+    deleteFile(id) {
+      this.$swal({
+        html:
+          '<strong class="text-danger"><i class="fa fa-info"></i>Bạn đồng ý xóa  ?</strong>',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fa fa-check-square"></i> Xác nhận!',
+        showLoaderOnConfirm: true,
+        preConfirm: function(text) {
+          return new Promise(function(resolve, reject) {
+            resolve();
+          });
+        },
+        allowOutsideClick: false
+      }).then(
+        function() {
+          window.axios.put("/api/file/delete/" + id).then(response => {
+            let status = response.data.status;
+
+            if (status === "error" || response.data.error) {
+              this.$swal({
+                title: "Error...",
+                text: "Xóa không thành công",
+                type: response.data.error
+              });
+            } else {
+              this.$swal({
+                title: "Ok",
+                text: "Xóa thành công !",
+                type: "success"
+              });
+              this.getList();
+            }
+          });
+        }.bind(this)
+      );
+    },
+    changeStatus(id, status) {
+      this.$swal({
+        html:
+          '<strong class="text-danger"><i class="fa fa-info"></i>Bạn đồng ý thay đổi trạng thái?  ?</strong>',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fa fa-check-square"></i> Xác nhận!',
+        showLoaderOnConfirm: true,
+        preConfirm: function(text) {
+          return new Promise(function(resolve, reject) {
+            resolve();
+          });
+        },
+        allowOutsideClick: false
+      }).then(
+        function() {
+          window.axios
+            .put("/api/file/changeStatus/" + id + "/" + status)
+            .then(response => {
+              let status = response.data.status;
+
+              if (status === "error" || response.data.error) {
+                this.$swal({
+                  title: "Error...",
+                  text: "Thay đổi trạng thái không thành công",
+                  type: response.data.error
+                });
+              } else {
+                this.$swal({
+                  title: "Ok",
+                  text: "Thay đổi trạng thái thành công !",
+                  type: "success"
+                });
+                this.getList();
+              }
+            });
+        }.bind(this)
+      );
+    }
   }
 };
 </script>

@@ -47486,134 +47486,133 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-    data: function data() {
-        return {
-            listFiles: [],
-            currentPage: 1,
-            paginate: null,
-            total: 0,
-            per_page: 0
-        };
-    },
+  data: function data() {
+    return {
+      listFiles: [],
+      currentPage: 1,
+      paginate: null,
+      total: 0,
+      per_page: 0
+    };
+  },
 
-    watch: {
-        currentPage: function currentPage() {
-            this.getList(this.currentPage);
-        }
-
-    },
-    mounted: function mounted() {
-        this.getList();
-        this.statusFileUpdate();
-    },
-
-    methods: {
-        statusFileUpdate: function statusFileUpdate() {
-            if (Cookies.get('statusUpdateFile')) {
-                this.$swal({
-                    title: 'Ok',
-                    text: "Cập nhật file thành công!",
-                    type: 'success'
-                });
-                Cookies.remove('statusUpdateFile');
-                return;
-            }
-            return;
-        },
-        getList: function getList() {
-            var _this = this;
-
-            var page = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
-
-            if (page !== 0) {
-                window.axios.get("/api/file/list?page=" + this.currentPage).then(function (response) {
-                    _this.listFiles = response.data.listFile;
-                    _this.paginate = response.data.paginate;
-                    _this.currentPage = _this.paginate.current_page_url;
-                    _this.total = _this.paginate.total;
-                    _this.per_page = _this.paginate.per_page;
-                });
-            } else {
-                window.axios.get("/api/file/list").then(function (response) {
-                    _this.listFiles = response.data.listFile;
-                    _this.paginate = response.data.paginate;
-                    _this.currentPage = _this.paginate.current_page_url;
-                    _this.total = _this.paginate.total;
-                    _this.per_page = _this.paginate.per_page;
-                });
-            }
-        },
-        deleteFile: function deleteFile(id) {
-            this.$swal({
-                html: '<strong class="text-danger"><i class="fa fa-info"></i>Bạn đồng ý xóa  ?</strong>',
-                showCancelButton: true,
-                confirmButtonText: '<i class="fa fa-check-square"></i> Xác nhận!',
-                showLoaderOnConfirm: true,
-                preConfirm: function preConfirm(text) {
-                    return new Promise(function (resolve, reject) {
-                        resolve();
-                    });
-                },
-                allowOutsideClick: false
-            }).then(function () {
-                var _this2 = this;
-
-                window.axios.put('/api/file/delete/' + id).then(function (response) {
-                    var status = response.data.status;
-
-                    if (status === 'error' || response.data.error) {
-                        _this2.$swal({
-                            title: 'Error...',
-                            text: 'Xóa không thành công',
-                            type: response.data.error
-                        });
-                    } else {
-                        _this2.$swal({
-                            title: 'Ok',
-                            text: "Xóa thành công !",
-                            type: 'success'
-                        });
-                        _this2.getList();
-                    }
-                });
-            }.bind(this));
-        },
-        changeStatus: function changeStatus(id, status) {
-            this.$swal({
-                html: '<strong class="text-danger"><i class="fa fa-info"></i>Bạn đồng ý thay đổi trạng thái?  ?</strong>',
-                showCancelButton: true,
-                confirmButtonText: '<i class="fa fa-check-square"></i> Xác nhận!',
-                showLoaderOnConfirm: true,
-                preConfirm: function preConfirm(text) {
-                    return new Promise(function (resolve, reject) {
-                        resolve();
-                    });
-                },
-                allowOutsideClick: false
-            }).then(function () {
-                var _this3 = this;
-
-                window.axios.put('/api/file/changeStatus/' + id + '/' + status).then(function (response) {
-                    var status = response.data.status;
-
-                    if (status === 'error' || response.data.error) {
-                        _this3.$swal({
-                            title: 'Error...',
-                            text: 'Thay đổi trạng thái không thành công',
-                            type: response.data.error
-                        });
-                    } else {
-                        _this3.$swal({
-                            title: 'Ok',
-                            text: "Thay đổi trạng thái thành công !",
-                            type: 'success'
-                        });
-                        _this3.getList();
-                    }
-                });
-            }.bind(this));
-        }
+  watch: {
+    currentPage: function currentPage() {
+      this.getList(this.currentPage);
     }
+  },
+  mounted: function mounted() {
+    this.getList();
+    this.statusFileUpdate();
+  },
+
+  methods: {
+    statusFileUpdate: function statusFileUpdate() {
+      if (Cookies.get("statusUpdateFile")) {
+        this.$swal({
+          title: "Ok",
+          text: "Cập nhật file thành công!",
+          type: "success"
+        });
+        Cookies.remove("statusUpdateFile");
+        return;
+      }
+      return;
+    },
+    getList: function getList() {
+      var _this = this;
+
+      var page = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+
+      if (page !== 0) {
+        window.axios.get("/api/file/list?page=" + this.currentPage).then(function (response) {
+          _this.listFiles = response.data.listFile;
+          _this.paginate = response.data.paginate;
+          _this.currentPage = _this.paginate.current_page_url;
+          _this.total = _this.paginate.total;
+          _this.per_page = _this.paginate.per_page;
+        });
+      } else {
+        window.axios.get("/api/file/list").then(function (response) {
+          _this.listFiles = response.data.listFile;
+          _this.paginate = response.data.paginate;
+          _this.currentPage = _this.paginate.current_page_url;
+          _this.total = _this.paginate.total;
+          _this.per_page = _this.paginate.per_page;
+        });
+      }
+    },
+    deleteFile: function deleteFile(id) {
+      this.$swal({
+        html: '<strong class="text-danger"><i class="fa fa-info"></i>Bạn đồng ý xóa  ?</strong>',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fa fa-check-square"></i> Xác nhận!',
+        showLoaderOnConfirm: true,
+        preConfirm: function preConfirm(text) {
+          return new Promise(function (resolve, reject) {
+            resolve();
+          });
+        },
+        allowOutsideClick: false
+      }).then(function () {
+        var _this2 = this;
+
+        window.axios.put("/api/file/delete/" + id).then(function (response) {
+          var status = response.data.status;
+
+          if (status === "error" || response.data.error) {
+            _this2.$swal({
+              title: "Error...",
+              text: "Xóa không thành công",
+              type: response.data.error
+            });
+          } else {
+            _this2.$swal({
+              title: "Ok",
+              text: "Xóa thành công !",
+              type: "success"
+            });
+            _this2.getList();
+          }
+        });
+      }.bind(this));
+    },
+    changeStatus: function changeStatus(id, status) {
+      this.$swal({
+        html: '<strong class="text-danger"><i class="fa fa-info"></i>Bạn đồng ý thay đổi trạng thái?  ?</strong>',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fa fa-check-square"></i> Xác nhận!',
+        showLoaderOnConfirm: true,
+        preConfirm: function preConfirm(text) {
+          return new Promise(function (resolve, reject) {
+            resolve();
+          });
+        },
+        allowOutsideClick: false
+      }).then(function () {
+        var _this3 = this;
+
+        window.axios.put("/api/file/changeStatus/" + id + "/" + status).then(function (response) {
+          var status = response.data.status;
+
+          if (status === "error" || response.data.error) {
+            _this3.$swal({
+              title: "Error...",
+              text: "Thay đổi trạng thái không thành công",
+              type: response.data.error
+            });
+          } else {
+            _this3.$swal({
+              title: "Ok",
+              text: "Thay đổi trạng thái thành công !",
+              type: "success"
+            });
+            _this3.getList();
+          }
+        });
+      }.bind(this));
+    }
+  }
 });
 
 /***/ }),
