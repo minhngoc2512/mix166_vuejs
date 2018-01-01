@@ -11,7 +11,7 @@
 |
 */
 Route::get('getsitemap','SiteMapController@getData');
-Route::get('cms', 'HomeController@index')->middleware('auth_cms')->name('home_cms');
+Route::get('cms', 'Cms\CmsController@index')->middleware('auth_cms')->name('home_cms');
 // Route::get('file/manage',function(){
 //     return view('cms.file.file_manage');
 // })->middleware('auth_cms')->name('file_manage');
@@ -42,5 +42,7 @@ Route::prefix('cms')->middleware('auth_cms')->group(function(){
         Route::get('edit/{id}','Cms\FilesController@editFile')->name('edit_file');
     });
 });
+
+Route::get('/','HomeController@index');
 
 //Auth::routes();
