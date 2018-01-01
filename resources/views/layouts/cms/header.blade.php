@@ -158,6 +158,7 @@
 	<script src="{!! asset('node_modules/popper.js/dist/umd/popper.min.js') !!}"></script>
 	<script src="{!! asset('node_modules/bootstrap/dist/js/bootstrap.min.js') !!}"></script>
 	<script src="{!! asset('node_modules/pace-progress/pace.min.js') !!}"></script>
+	<script src="{!! asset('js/js.cookie.min.js') !!}"></script>
 
 
 	<!-- Plugins and scripts required by all views -->

@@ -217,14 +217,16 @@ export default {
       }
       var request = new XMLHttpRequest();
       request.onreadystatechange = function() {
-        if (this.status == 200) {
-          console.log(" up file ok");
+        if (this.status === 200) {
+         alert("Tạo file thành công!");
+         window.location = "/cms/file/list";
+        }else{
+            alert("Tạo file không thành công!");
         }
       }.bind(this);
       request.open("POST", "/api/file/add");
       request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
       request.send(formData);
-      window.location = "/cms/file/list";
     },
     onThumbnailChange(e) {
       let files = e.target.files || e.dataTransfer.files;

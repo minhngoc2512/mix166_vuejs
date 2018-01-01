@@ -124,8 +124,22 @@ export default {
   },
   mounted() {
     this.getList();
+    this.statusFileUpdate();
   },
   methods: {
+
+      statusFileUpdate(){
+          if(Cookies.get('statusUpdateFile')){
+                  this.$swal({
+                          title: 'Ok',
+                          text: "Cập nhật file thành công!",
+                          type: 'success'
+                      });
+                      Cookies.remove('statusUpdateFile');
+                      return;
+          }
+          return;
+      },
     getList(page=0){
         if(page !== 0){
             window.axios.get("/api/file/list?page="+this.currentPage).then(response => {

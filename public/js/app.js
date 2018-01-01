@@ -1177,6 +1177,227 @@ module.exports = {
 
 /***/ }),
 /* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/*
+  MIT License http://www.opensource.org/licenses/mit-license.php
+  Author Tobias Koppers @sokra
+  Modified by Evan You @yyx990803
+*/
+
+var hasDocument = typeof document !== 'undefined'
+
+if (typeof DEBUG !== 'undefined' && DEBUG) {
+  if (!hasDocument) {
+    throw new Error(
+    'vue-style-loader cannot be used in a non-browser environment. ' +
+    "Use { target: 'node' } in your Webpack config to indicate a server-rendering environment."
+  ) }
+}
+
+var listToStyles = __webpack_require__(126)
+
+/*
+type StyleObject = {
+  id: number;
+  parts: Array<StyleObjectPart>
+}
+
+type StyleObjectPart = {
+  css: string;
+  media: string;
+  sourceMap: ?string
+}
+*/
+
+var stylesInDom = {/*
+  [id: number]: {
+    id: number,
+    refs: number,
+    parts: Array<(obj?: StyleObjectPart) => void>
+  }
+*/}
+
+var head = hasDocument && (document.head || document.getElementsByTagName('head')[0])
+var singletonElement = null
+var singletonCounter = 0
+var isProduction = false
+var noop = function () {}
+
+// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+// tags it will allow on a page
+var isOldIE = typeof navigator !== 'undefined' && /msie [6-9]\b/.test(navigator.userAgent.toLowerCase())
+
+module.exports = function (parentId, list, _isProduction) {
+  isProduction = _isProduction
+
+  var styles = listToStyles(parentId, list)
+  addStylesToDom(styles)
+
+  return function update (newList) {
+    var mayRemove = []
+    for (var i = 0; i < styles.length; i++) {
+      var item = styles[i]
+      var domStyle = stylesInDom[item.id]
+      domStyle.refs--
+      mayRemove.push(domStyle)
+    }
+    if (newList) {
+      styles = listToStyles(parentId, newList)
+      addStylesToDom(styles)
+    } else {
+      styles = []
+    }
+    for (var i = 0; i < mayRemove.length; i++) {
+      var domStyle = mayRemove[i]
+      if (domStyle.refs === 0) {
+        for (var j = 0; j < domStyle.parts.length; j++) {
+          domStyle.parts[j]()
+        }
+        delete stylesInDom[domStyle.id]
+      }
+    }
+  }
+}
+
+function addStylesToDom (styles /* Array<StyleObject> */) {
+  for (var i = 0; i < styles.length; i++) {
+    var item = styles[i]
+    var domStyle = stylesInDom[item.id]
+    if (domStyle) {
+      domStyle.refs++
+      for (var j = 0; j < domStyle.parts.length; j++) {
+        domStyle.parts[j](item.parts[j])
+      }
+      for (; j < item.parts.length; j++) {
+        domStyle.parts.push(addStyle(item.parts[j]))
+      }
+      if (domStyle.parts.length > item.parts.length) {
+        domStyle.parts.length = item.parts.length
+      }
+    } else {
+      var parts = []
+      for (var j = 0; j < item.parts.length; j++) {
+        parts.push(addStyle(item.parts[j]))
+      }
+      stylesInDom[item.id] = { id: item.id, refs: 1, parts: parts }
+    }
+  }
+}
+
+function createStyleElement () {
+  var styleElement = document.createElement('style')
+  styleElement.type = 'text/css'
+  head.appendChild(styleElement)
+  return styleElement
+}
+
+function addStyle (obj /* StyleObjectPart */) {
+  var update, remove
+  var styleElement = document.querySelector('style[data-vue-ssr-id~="' + obj.id + '"]')
+
+  if (styleElement) {
+    if (isProduction) {
+      // has SSR styles and in production mode.
+      // simply do nothing.
+      return noop
+    } else {
+      // has SSR styles but in dev mode.
+      // for some reason Chrome can't handle source map in server-rendered
+      // style tags - source maps in <style> only works if the style tag is
+      // created and inserted dynamically. So we remove the server rendered
+      // styles and inject new ones.
+      styleElement.parentNode.removeChild(styleElement)
+    }
+  }
+
+  if (isOldIE) {
+    // use singleton mode for IE9.
+    var styleIndex = singletonCounter++
+    styleElement = singletonElement || (singletonElement = createStyleElement())
+    update = applyToSingletonTag.bind(null, styleElement, styleIndex, false)
+    remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true)
+  } else {
+    // use multi-style-tag mode in all other cases
+    styleElement = createStyleElement()
+    update = applyToTag.bind(null, styleElement)
+    remove = function () {
+      styleElement.parentNode.removeChild(styleElement)
+    }
+  }
+
+  update(obj)
+
+  return function updateStyle (newObj /* StyleObjectPart */) {
+    if (newObj) {
+      if (newObj.css === obj.css &&
+          newObj.media === obj.media &&
+          newObj.sourceMap === obj.sourceMap) {
+        return
+      }
+      update(obj = newObj)
+    } else {
+      remove()
+    }
+  }
+}
+
+var replaceText = (function () {
+  var textStore = []
+
+  return function (index, replacement) {
+    textStore[index] = replacement
+    return textStore.filter(Boolean).join('\n')
+  }
+})()
+
+function applyToSingletonTag (styleElement, index, remove, obj) {
+  var css = remove ? '' : obj.css
+
+  if (styleElement.styleSheet) {
+    styleElement.styleSheet.cssText = replaceText(index, css)
+  } else {
+    var cssNode = document.createTextNode(css)
+    var childNodes = styleElement.childNodes
+    if (childNodes[index]) styleElement.removeChild(childNodes[index])
+    if (childNodes.length) {
+      styleElement.insertBefore(cssNode, childNodes[index])
+    } else {
+      styleElement.appendChild(cssNode)
+    }
+  }
+}
+
+function applyToTag (styleElement, obj) {
+  var css = obj.css
+  var media = obj.media
+  var sourceMap = obj.sourceMap
+
+  if (media) {
+    styleElement.setAttribute('media', media)
+  }
+
+  if (sourceMap) {
+    // https://developer.chrome.com/devtools/docs/javascript-debugging
+    // this makes source maps inside style tags work properly in Chrome
+    css += '\n/*# sourceURL=' + sourceMap.sources[0] + ' */'
+    // http://stackoverflow.com/a/26603875
+    css += '\n/*# sourceMappingURL=data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + ' */'
+  }
+
+  if (styleElement.styleSheet) {
+    styleElement.styleSheet.cssText = css
+  } else {
+    while (styleElement.firstChild) {
+      styleElement.removeChild(styleElement.firstChild)
+    }
+    styleElement.appendChild(document.createTextNode(css))
+  }
+}
+
+
+/***/ }),
+/* 9 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1417,227 +1638,6 @@ function clickHandlerFactory(_ref3) {
     return h(tag, componentData, children);
   }
 });
-
-/***/ }),
-/* 9 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/*
-  MIT License http://www.opensource.org/licenses/mit-license.php
-  Author Tobias Koppers @sokra
-  Modified by Evan You @yyx990803
-*/
-
-var hasDocument = typeof document !== 'undefined'
-
-if (typeof DEBUG !== 'undefined' && DEBUG) {
-  if (!hasDocument) {
-    throw new Error(
-    'vue-style-loader cannot be used in a non-browser environment. ' +
-    "Use { target: 'node' } in your Webpack config to indicate a server-rendering environment."
-  ) }
-}
-
-var listToStyles = __webpack_require__(126)
-
-/*
-type StyleObject = {
-  id: number;
-  parts: Array<StyleObjectPart>
-}
-
-type StyleObjectPart = {
-  css: string;
-  media: string;
-  sourceMap: ?string
-}
-*/
-
-var stylesInDom = {/*
-  [id: number]: {
-    id: number,
-    refs: number,
-    parts: Array<(obj?: StyleObjectPart) => void>
-  }
-*/}
-
-var head = hasDocument && (document.head || document.getElementsByTagName('head')[0])
-var singletonElement = null
-var singletonCounter = 0
-var isProduction = false
-var noop = function () {}
-
-// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
-// tags it will allow on a page
-var isOldIE = typeof navigator !== 'undefined' && /msie [6-9]\b/.test(navigator.userAgent.toLowerCase())
-
-module.exports = function (parentId, list, _isProduction) {
-  isProduction = _isProduction
-
-  var styles = listToStyles(parentId, list)
-  addStylesToDom(styles)
-
-  return function update (newList) {
-    var mayRemove = []
-    for (var i = 0; i < styles.length; i++) {
-      var item = styles[i]
-      var domStyle = stylesInDom[item.id]
-      domStyle.refs--
-      mayRemove.push(domStyle)
-    }
-    if (newList) {
-      styles = listToStyles(parentId, newList)
-      addStylesToDom(styles)
-    } else {
-      styles = []
-    }
-    for (var i = 0; i < mayRemove.length; i++) {
-      var domStyle = mayRemove[i]
-      if (domStyle.refs === 0) {
-        for (var j = 0; j < domStyle.parts.length; j++) {
-          domStyle.parts[j]()
-        }
-        delete stylesInDom[domStyle.id]
-      }
-    }
-  }
-}
-
-function addStylesToDom (styles /* Array<StyleObject> */) {
-  for (var i = 0; i < styles.length; i++) {
-    var item = styles[i]
-    var domStyle = stylesInDom[item.id]
-    if (domStyle) {
-      domStyle.refs++
-      for (var j = 0; j < domStyle.parts.length; j++) {
-        domStyle.parts[j](item.parts[j])
-      }
-      for (; j < item.parts.length; j++) {
-        domStyle.parts.push(addStyle(item.parts[j]))
-      }
-      if (domStyle.parts.length > item.parts.length) {
-        domStyle.parts.length = item.parts.length
-      }
-    } else {
-      var parts = []
-      for (var j = 0; j < item.parts.length; j++) {
-        parts.push(addStyle(item.parts[j]))
-      }
-      stylesInDom[item.id] = { id: item.id, refs: 1, parts: parts }
-    }
-  }
-}
-
-function createStyleElement () {
-  var styleElement = document.createElement('style')
-  styleElement.type = 'text/css'
-  head.appendChild(styleElement)
-  return styleElement
-}
-
-function addStyle (obj /* StyleObjectPart */) {
-  var update, remove
-  var styleElement = document.querySelector('style[data-vue-ssr-id~="' + obj.id + '"]')
-
-  if (styleElement) {
-    if (isProduction) {
-      // has SSR styles and in production mode.
-      // simply do nothing.
-      return noop
-    } else {
-      // has SSR styles but in dev mode.
-      // for some reason Chrome can't handle source map in server-rendered
-      // style tags - source maps in <style> only works if the style tag is
-      // created and inserted dynamically. So we remove the server rendered
-      // styles and inject new ones.
-      styleElement.parentNode.removeChild(styleElement)
-    }
-  }
-
-  if (isOldIE) {
-    // use singleton mode for IE9.
-    var styleIndex = singletonCounter++
-    styleElement = singletonElement || (singletonElement = createStyleElement())
-    update = applyToSingletonTag.bind(null, styleElement, styleIndex, false)
-    remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true)
-  } else {
-    // use multi-style-tag mode in all other cases
-    styleElement = createStyleElement()
-    update = applyToTag.bind(null, styleElement)
-    remove = function () {
-      styleElement.parentNode.removeChild(styleElement)
-    }
-  }
-
-  update(obj)
-
-  return function updateStyle (newObj /* StyleObjectPart */) {
-    if (newObj) {
-      if (newObj.css === obj.css &&
-          newObj.media === obj.media &&
-          newObj.sourceMap === obj.sourceMap) {
-        return
-      }
-      update(obj = newObj)
-    } else {
-      remove()
-    }
-  }
-}
-
-var replaceText = (function () {
-  var textStore = []
-
-  return function (index, replacement) {
-    textStore[index] = replacement
-    return textStore.filter(Boolean).join('\n')
-  }
-})()
-
-function applyToSingletonTag (styleElement, index, remove, obj) {
-  var css = remove ? '' : obj.css
-
-  if (styleElement.styleSheet) {
-    styleElement.styleSheet.cssText = replaceText(index, css)
-  } else {
-    var cssNode = document.createTextNode(css)
-    var childNodes = styleElement.childNodes
-    if (childNodes[index]) styleElement.removeChild(childNodes[index])
-    if (childNodes.length) {
-      styleElement.insertBefore(cssNode, childNodes[index])
-    } else {
-      styleElement.appendChild(cssNode)
-    }
-  }
-}
-
-function applyToTag (styleElement, obj) {
-  var css = obj.css
-  var media = obj.media
-  var sourceMap = obj.sourceMap
-
-  if (media) {
-    styleElement.setAttribute('media', media)
-  }
-
-  if (sourceMap) {
-    // https://developer.chrome.com/devtools/docs/javascript-debugging
-    // this makes source maps inside style tags work properly in Chrome
-    css += '\n/*# sourceURL=' + sourceMap.sources[0] + ' */'
-    // http://stackoverflow.com/a/26603875
-    css += '\n/*# sourceMappingURL=data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + ' */'
-  }
-
-  if (styleElement.styleSheet) {
-    styleElement.styleSheet.cssText = css
-  } else {
-    while (styleElement.firstChild) {
-      styleElement.removeChild(styleElement.firstChild)
-    }
-    styleElement.appendChild(document.createTextNode(css))
-  }
-}
-
 
 /***/ }),
 /* 10 */
@@ -4221,7 +4221,7 @@ function warn(message) {
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__utils_array__ = __webpack_require__(3);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__utils_object__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__utils_dom__ = __webpack_require__(4);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__link_link__ = __webpack_require__(8);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__link_link__ = __webpack_require__(9);
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 
@@ -16601,7 +16601,7 @@ var props = Object(__WEBPACK_IMPORTED_MODULE_1__utils_object__["a" /* assign */]
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return props; });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__utils__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__utils_object__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__link_link__ = __webpack_require__(8);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__link_link__ = __webpack_require__(9);
 
 
 
@@ -18699,7 +18699,7 @@ module.exports = Cancel;
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(59);
-module.exports = __webpack_require__(263);
+module.exports = __webpack_require__(268);
 
 
 /***/ }),
@@ -18756,17 +18756,17 @@ __WEBPACK_IMPORTED_MODULE_0_vue___default.a.use(__WEBPACK_IMPORTED_MODULE_4_vue_
 //File Manage
 __WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_file", __webpack_require__(241));
 __WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("create_file", __webpack_require__(246));
-__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("edit_file", __webpack_require__(270));
+__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("edit_file", __webpack_require__(251));
 //User Manager
 
-__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_user", __webpack_require__(251));
+__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_user", __webpack_require__(256));
 
 //Artist
-__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_artist", __webpack_require__(254));
+__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_artist", __webpack_require__(259));
 //Category
-__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_category", __webpack_require__(257));
+__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_category", __webpack_require__(262));
 //Genre
-__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_genre", __webpack_require__(260));
+__WEBPACK_IMPORTED_MODULE_0_vue___default.a.component("list_genre", __webpack_require__(265));
 var app = new __WEBPACK_IMPORTED_MODULE_0_vue___default.a({
   el: "#app"
 });
@@ -19760,7 +19760,7 @@ Object(__WEBPACK_IMPORTED_MODULE_1__utils__["m" /* vueUse */])(VuePlugin);
 /* unused harmony export props */
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__utils__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__utils_object__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__link_link__ = __webpack_require__(8);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__link_link__ = __webpack_require__(9);
 
 
 
@@ -21200,7 +21200,7 @@ function isObject(obj) {
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__utils_range__ = __webpack_require__(102);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__utils__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__utils_dom__ = __webpack_require__(4);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__components_link_link__ = __webpack_require__(8);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__components_link_link__ = __webpack_require__(9);
 /*
  * Comon props, computed, data, render function, and methods for b-pagination and b-pagination-nav
  */
@@ -23158,7 +23158,7 @@ var EVENT_STATE = 'bv::collapse::state';
 "use strict";
 /* unused harmony export props */
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__utils__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__link_link__ = __webpack_require__(8);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__link_link__ = __webpack_require__(9);
 
 
 
@@ -23496,7 +23496,7 @@ var content = __webpack_require__(125);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(9)("77889a42", content, false);
+var update = __webpack_require__(8)("77889a42", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -24157,7 +24157,7 @@ var content = __webpack_require__(136);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(9)("efa58c94", content, false);
+var update = __webpack_require__(8)("efa58c94", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -24635,7 +24635,7 @@ var content = __webpack_require__(144);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(9)("ff6bd436", content, false);
+var update = __webpack_require__(8)("ff6bd436", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -25508,7 +25508,7 @@ var props = {
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__link__ = __webpack_require__(8);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__link__ = __webpack_require__(9);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__utils__ = __webpack_require__(0);
 
 
@@ -25604,7 +25604,7 @@ var props = {
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__utils__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__utils_object__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__utils_array__ = __webpack_require__(3);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__link_link__ = __webpack_require__(8);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__link_link__ = __webpack_require__(9);
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 
@@ -25850,7 +25850,7 @@ var content = __webpack_require__(162);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(9)("55646212", content, false);
+var update = __webpack_require__(8)("55646212", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -26728,7 +26728,7 @@ var props = {
 "use strict";
 /* unused harmony export props */
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__utils__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__link_link__ = __webpack_require__(8);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__link_link__ = __webpack_require__(9);
 
 
 
@@ -27021,7 +27021,7 @@ var props = {
 
 "use strict";
 /* unused harmony export props */
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__link_link__ = __webpack_require__(8);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__link_link__ = __webpack_require__(9);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__utils__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__utils_object__ = __webpack_require__(1);
 
@@ -27211,7 +27211,7 @@ var content = __webpack_require__(179);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(9)("306fee52", content, false);
+var update = __webpack_require__(8)("306fee52", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -27421,7 +27421,7 @@ var content = __webpack_require__(185);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(9)("5527d271", content, false);
+var update = __webpack_require__(8)("5527d271", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -27459,7 +27459,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__utils_object__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__utils__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__mixins__ = __webpack_require__(2);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__link_link__ = __webpack_require__(8);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__link_link__ = __webpack_require__(9);
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 //
@@ -27743,7 +27743,7 @@ var content = __webpack_require__(193);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(9)("7352cb88", content, false);
+var update = __webpack_require__(8)("7352cb88", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -27962,7 +27962,7 @@ var content = __webpack_require__(199);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(9)("c74646ce", content, false);
+var update = __webpack_require__(8)("c74646ce", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -47342,7 +47342,7 @@ var content = __webpack_require__(243);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(9)("00a98f82", content, false);
+var update = __webpack_require__(8)("00a98f82", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -47504,9 +47504,22 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     },
     mounted: function mounted() {
         this.getList();
+        this.statusFileUpdate();
     },
 
     methods: {
+        statusFileUpdate: function statusFileUpdate() {
+            if (Cookies.get('statusUpdateFile')) {
+                this.$swal({
+                    title: 'Ok',
+                    text: "Cập nhật file thành công!",
+                    type: 'success'
+                });
+                Cookies.remove('statusUpdateFile');
+                return;
+            }
+            return;
+        },
         getList: function getList() {
             var _this = this;
 
@@ -48093,7 +48106,7 @@ var content = __webpack_require__(248);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(9)("33502383", content, false);
+var update = __webpack_require__(8)("33502383", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -48348,14 +48361,16 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
       }
       var request = new XMLHttpRequest();
       request.onreadystatechange = function () {
-        if (this.status == 200) {
-          console.log(" up file ok");
+        if (this.status === 200) {
+          alert("Tạo file thành công!");
+          window.location = "/cms/file/list";
+        } else {
+          alert("Tạo file không thành công!");
         }
       }.bind(this);
       request.open("POST", "/api/file/add");
       request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
       request.send(formData);
-      window.location = "/cms/file/list";
     },
     onThumbnailChange: function onThumbnailChange(e) {
       var files = e.target.files || e.dataTransfer.files;
@@ -48956,11 +48971,1126 @@ if (false) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var disposed = false
+function injectStyle (ssrContext) {
+  if (disposed) return
+  __webpack_require__(252)
+}
 var normalizeComponent = __webpack_require__(5)
 /* script */
-var __vue_script__ = __webpack_require__(252)
+var __vue_script__ = __webpack_require__(254)
 /* template */
-var __vue_template__ = __webpack_require__(253)
+var __vue_template__ = __webpack_require__(255)
+/* template functional */
+var __vue_template_functional__ = false
+/* styles */
+var __vue_styles__ = injectStyle
+/* scopeId */
+var __vue_scopeId__ = null
+/* moduleIdentifier (server only) */
+var __vue_module_identifier__ = null
+var Component = normalizeComponent(
+  __vue_script__,
+  __vue_template__,
+  __vue_template_functional__,
+  __vue_styles__,
+  __vue_scopeId__,
+  __vue_module_identifier__
+)
+Component.options.__file = "resources/assets/js/components/file/edit.vue"
+if (Component.esModule && Object.keys(Component.esModule).some(function (key) {  return key !== "default" && key.substr(0, 2) !== "__"})) {  console.error("named exports are not supported in *.vue files.")}
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-1306c036", Component.options)
+  } else {
+    hotAPI.reload("data-v-1306c036", Component.options)
+' + '  }
+  module.hot.dispose(function (data) {
+    disposed = true
+  })
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 252 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(253);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(8)("0ca7e41d", content, false);
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-1306c036\",\"scoped\":false,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0&bustCache!./edit.vue", function() {
+     var newContent = require("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-1306c036\",\"scoped\":false,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0&bustCache!./edit.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 253 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(6)(undefined);
+// imports
+
+
+// module
+exports.push([module.i, "\n.color-text-warring {\n    color: red;\n}\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 254 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+    props: ['id'],
+    data: function data() {
+        return {
+            listCategories: [],
+            listGenres: [],
+            listArtists: [],
+            typeFileInput: "",
+            typeFile: "audio",
+            statusTypeFile: "",
+            thumbnail: null,
+            thumbnailShow: null,
+            name: "",
+            category: "",
+            genre: "",
+            artist: "",
+            url: "",
+            fileMedia: null,
+            status: true,
+            statusInsetImage: false,
+            statusInsertFile: false,
+            typeFileDb: null,
+            pathFileDb: null
+        };
+    },
+    mounted: function mounted() {
+        this.getInformationFile();
+    },
+
+    watch: {
+        category: function category() {
+            if (this.category.type == "video") {
+                this.statusTypeFile = "video";
+                this.typeFile = "video";
+            } else if (this.category.type == "audio") {
+                this.statusTypeFile = "audio";
+                this.typeFile = "audio";
+            } else if (this.category.type == "all") {
+                this.statusTypeFile = "all";
+                this.typeFile = "";
+            } else {
+                this.statusTypeFile = "";
+                this.typeFile = "";
+            }
+        }
+    },
+    methods: {
+        getInformationFile: function getInformationFile() {
+            var _this = this;
+
+            window.axios.put('/api/file/edit/get-information/' + this.id).then(function (response) {
+                var file = response.data.file;
+                _this.listArtists = response.data.artists;
+                _this.listCategories = response.data.categories;
+                _this.listGenres = response.data.genres;
+                _this.name = file.name;
+                _this.category = file.category_id;
+                _this.genre = file.genre_id;
+                _this.artist = file.artist_id;
+                _this.thumbnailShow = '/storage' + file.thumbnail;
+                _this.typeFile = file.type;
+                _this.typeFileDb = file.type;
+                _this.pathFileDb = file.path;
+                _this.status = file.status;
+            });
+        },
+        insertImage: function insertImage() {
+            this.statusInsetImage = true;
+        },
+        insertFile: function insertFile() {
+            this.statusInsertFile = true;
+        },
+        submitFile: function submitFile() {
+            var _this2 = this;
+
+            if (this.name === null || this.name === "") {
+                this.$swal({
+                    title: "Error...",
+                    text: "Vui lòng nhập tên file!",
+                    type: "error"
+                });
+                return;
+            }
+            var formData = new FormData();
+            formData.append("id", this.id);
+            formData.append("name", this.name);
+            formData.append("typeFile", this.typeFile);
+            formData.append("thumbnail", this.thumbnail);
+            formData.append("category", this.category);
+            formData.append("genre", this.genre);
+            formData.append("artist", this.artist);
+            formData.append("status", this.status);
+            formData.append("user", window.cms.auth);
+            formData.append("typeFileInput", this.typeFileInput);
+            if (this.typeFileInput === "file") {
+                if (this.fileMedia === null) {
+                    this.$swal({
+                        title: "Error...",
+                        text: "Vui lòng chèn file!",
+                        type: "error"
+                    });
+                    return;
+                }
+                formData.append("file", this.fileMedia);
+            } else if (this.typeFileInput === "url") {
+                if (this.url === "") {
+                    this.$swal({
+                        title: "Error...",
+                        text: "Vui lòng chèn url!",
+                        type: "error"
+                    });
+                    return;
+                }
+                formData.append("url", this.url);
+            }
+            window.axios.post('/api/file/edit/update', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    "Authorization": "Bearer " + window.cms.api_token
+                }
+            }).then(function (response) {
+                if (response.data.status === 'ok') {
+                    Cookies.set('statusUpdateFile', 'ok');
+                    window.location = '/cms/file/list';
+                } else {
+                    _this2.$swal({
+                        title: "Error...",
+                        text: "Cập nhật file không thành công! Vui lòng thử  lại?",
+                        type: "error"
+                    });
+                }
+            });
+            // var request = new XMLHttpRequest();
+            // request.onreadystatechange = function () {
+            //     console.log(this);
+            //     if (this.readyState == 4 && this.status == 200) {
+            //         Cookies.set('statusUpdateFile', 'ok');
+            //         window.location = '/cms/file/list';
+            //         alert("ok");
+            //     } else if (this.status === 400 || this.status === 500) {
+            //         alert("Sửa file không thành công!");
+            //     }
+            // }.bind(this);
+            // request.open("POST", "/api/file/edit/update");
+            // request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
+            // request.send(formData);
+        },
+        onThumbnailChange: function onThumbnailChange(e) {
+            var files = e.target.files || e.dataTransfer.files;
+            if (files[0].type.search("image") !== -1) {
+                this.thumbnail = files[0];
+                if (!files.length) return;
+                this.createImage(files[0]);
+            } else {
+                this.$swal({
+                    title: "Error...",
+                    text: "Vui lòng chọn đúng định dạng file",
+                    type: "error"
+                });
+                this.thumbnailShow = null;
+            }
+        },
+        createImage: function createImage(file) {
+            var reader = new FileReader();
+            var vm = this;
+            reader.onload = function (e) {
+                vm.thumbnailShow = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        },
+        onFileChange: function onFileChange(e) {
+            var file = e.target.files || e.dataTransfer.files;
+            if (this.typeFile === "audio") {
+                if (file[0].type.search("audio") !== -1) {
+                    this.fileMedia = file[0];
+                } else {
+                    this.$swal({
+                        title: "Error...",
+                        text: "Vui lòng chọn đúng định dạng file AUDIO(mp3,acc,...)",
+                        type: "error"
+                    });
+                }
+            } else if (this.typeFile === "video") {
+                if (file[0].type.search("video") !== -1) {
+                    this.fileMedia = file[0];
+                } else {
+                    this.$swal({
+                        title: "Error...",
+                        text: "Vui lòng chọn đúng định dạng file VIDEO(mp4,flv,avi,...)",
+                        type: "error"
+                    });
+                }
+            }
+        },
+        resetForm: function resetForm() {
+            this.typeFileInput = "url";
+            this.typeFile = "audio";
+            this.thumbnail = null;
+            this.thumbnailShow = null;
+            this.statusTypeFile = "";
+            this.name = "";
+            this.category = "";
+            this.genre = "";
+            this.artist = "";
+            this.url = "";
+            this.fileMedia = null;
+            this.status = true;
+        }
+    }
+
+});
+
+/***/ }),
+/* 255 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c("div", [
+    _vm._m(0, false, false),
+    _vm._v(" "),
+    _c("div", { staticClass: "container" }, [
+      _c("div", { staticClass: "card" }, [
+        _c("div", { staticClass: "card-header" }, [
+          _vm._v("\n                Nhập thông tin file\n            ")
+        ]),
+        _vm._v(" "),
+        _c("div", { staticClass: "card-body" }, [
+          _c("form", { attrs: { action: "", method: "post" } }, [
+            _c("div", { staticClass: "form-group" }, [
+              _c("label", [_vm._v("Tên file")]),
+              _vm._v(" "),
+              _c("input", {
+                directives: [
+                  {
+                    name: "model",
+                    rawName: "v-model",
+                    value: _vm.name,
+                    expression: "name"
+                  }
+                ],
+                staticClass: "form-control",
+                attrs: { type: "text", placeholder: "Nhập tên file.." },
+                domProps: { value: _vm.name },
+                on: {
+                  input: function($event) {
+                    if ($event.target.composing) {
+                      return
+                    }
+                    _vm.name = $event.target.value
+                  }
+                }
+              }),
+              _vm._v(" "),
+              _vm.name === ""
+                ? _c("span", { staticClass: "color-text-warring help-block" }, [
+                    _vm._v("Vui lòng nhập tên file")
+                  ])
+                : _vm._e()
+            ]),
+            _vm._v(" "),
+            _c("div", { staticClass: "form-group" }, [
+              _vm.thumbnailShow === null
+                ? _c("label", [_vm._v("Chọn ảnh cho file")])
+                : _vm._e(),
+              _vm._v(" "),
+              _vm.thumbnailShow !== null
+                ? _c("img", {
+                    staticClass: "img-thumbnail",
+                    staticStyle: { "margin-bottom": "20px" },
+                    attrs: {
+                      src: _vm.thumbnailShow,
+                      alt: "Cinque Terre",
+                      width: "200",
+                      height: "200"
+                    }
+                  })
+                : _vm._e(),
+              _vm._v(" "),
+              _c("br"),
+              _vm._v(" "),
+              _c("input", {
+                staticClass: "btn btn-success",
+                attrs: { type: "button", value: "Chọn ảnh mới" },
+                on: { click: _vm.insertImage }
+              }),
+              _vm._v(" "),
+              _c("br"),
+              _vm._v(" "),
+              _c("br"),
+              _vm._v(" "),
+              _vm.statusInsetImage === true
+                ? _c("input", {
+                    staticClass: "form-control",
+                    attrs: { type: "file", name: "thumnail" },
+                    on: { change: _vm.onThumbnailChange }
+                  })
+                : _vm._e(),
+              _vm._v(" "),
+              _vm.thumbnailShow === null
+                ? _c("span", { staticClass: "help-block color-text-warring" }, [
+                    _vm._v(
+                      "\n                            Vui lòng chọn ảnh cho file tải lên\n                        "
+                    )
+                  ])
+                : _vm._e()
+            ]),
+            _vm._v(" "),
+            _c("div", { staticClass: "form-group" }, [
+              _c("label", [_vm._v("Trạng thái hoạt động")]),
+              _vm._v(" "),
+              _c(
+                "label",
+                { staticClass: "switch switch-lg switch-3d switch-primary" },
+                [
+                  _c("input", {
+                    directives: [
+                      {
+                        name: "model",
+                        rawName: "v-model",
+                        value: _vm.status,
+                        expression: "status"
+                      }
+                    ],
+                    staticClass: "switch-input",
+                    attrs: { type: "checkbox", checked: "" },
+                    domProps: {
+                      checked: Array.isArray(_vm.status)
+                        ? _vm._i(_vm.status, null) > -1
+                        : _vm.status
+                    },
+                    on: {
+                      change: function($event) {
+                        var $$a = _vm.status,
+                          $$el = $event.target,
+                          $$c = $$el.checked ? true : false
+                        if (Array.isArray($$a)) {
+                          var $$v = null,
+                            $$i = _vm._i($$a, $$v)
+                          if ($$el.checked) {
+                            $$i < 0 && (_vm.status = $$a.concat([$$v]))
+                          } else {
+                            $$i > -1 &&
+                              (_vm.status = $$a
+                                .slice(0, $$i)
+                                .concat($$a.slice($$i + 1)))
+                          }
+                        } else {
+                          _vm.status = $$c
+                        }
+                      }
+                    }
+                  }),
+                  _vm._v(" "),
+                  _c("span", { staticClass: "switch-label" }),
+                  _vm._v(" "),
+                  _c("span", { staticClass: "switch-handle" })
+                ]
+              )
+            ]),
+            _vm._v(" "),
+            _c("div", { staticClass: "form-group" }, [
+              _c("label", [_vm._v("Chuyên mục")]),
+              _vm._v(" "),
+              _c(
+                "select",
+                {
+                  directives: [
+                    {
+                      name: "model",
+                      rawName: "v-model",
+                      value: _vm.category,
+                      expression: "category"
+                    }
+                  ],
+                  staticClass: "form-control",
+                  on: {
+                    change: function($event) {
+                      var $$selectedVal = Array.prototype.filter
+                        .call($event.target.options, function(o) {
+                          return o.selected
+                        })
+                        .map(function(o) {
+                          var val = "_value" in o ? o._value : o.value
+                          return val
+                        })
+                      _vm.category = $event.target.multiple
+                        ? $$selectedVal
+                        : $$selectedVal[0]
+                    }
+                  }
+                },
+                [
+                  _c("option", { attrs: { value: "" } }, [
+                    _vm._v("Chọn chuyên mục")
+                  ]),
+                  _vm._v(" "),
+                  _vm._l(_vm.listCategories, function(itemCategory) {
+                    return _c(
+                      "option",
+                      {
+                        key: itemCategory.id,
+                        domProps: { value: itemCategory.id }
+                      },
+                      [
+                        _vm._v(
+                          _vm._s(itemCategory.name) +
+                            "\n                            "
+                        )
+                      ]
+                    )
+                  })
+                ],
+                2
+              ),
+              _vm._v(" "),
+              _vm.category === ""
+                ? _c("span", { staticClass: "color-text-warring help-block" }, [
+                    _vm._v("Vui lòng chọn chuyên mục")
+                  ])
+                : _vm._e()
+            ]),
+            _vm._v(" "),
+            _c("div", { staticClass: "form-group" }, [
+              _c("label", [_vm._v("Thể loại")]),
+              _vm._v(" "),
+              _c(
+                "select",
+                {
+                  directives: [
+                    {
+                      name: "model",
+                      rawName: "v-model",
+                      value: _vm.genre,
+                      expression: "genre"
+                    }
+                  ],
+                  staticClass: "form-control",
+                  on: {
+                    change: function($event) {
+                      var $$selectedVal = Array.prototype.filter
+                        .call($event.target.options, function(o) {
+                          return o.selected
+                        })
+                        .map(function(o) {
+                          var val = "_value" in o ? o._value : o.value
+                          return val
+                        })
+                      _vm.genre = $event.target.multiple
+                        ? $$selectedVal
+                        : $$selectedVal[0]
+                    }
+                  }
+                },
+                [
+                  _c("option", { attrs: { value: "" } }, [
+                    _vm._v("Chọn thể  loại")
+                  ]),
+                  _vm._v(" "),
+                  _vm._l(_vm.listGenres, function(itemGenre) {
+                    return _c(
+                      "option",
+                      { key: itemGenre.id, domProps: { value: itemGenre.id } },
+                      [
+                        _vm._v(
+                          "\n                                " +
+                            _vm._s(itemGenre.name) +
+                            "\n                            "
+                        )
+                      ]
+                    )
+                  })
+                ],
+                2
+              ),
+              _vm._v(" "),
+              _vm.genre === ""
+                ? _c("span", { staticClass: "color-text-warring help-block" }, [
+                    _vm._v("Vui lòng chọn thể loại")
+                  ])
+                : _vm._e()
+            ]),
+            _vm._v(" "),
+            _c("div", { staticClass: "form-group" }, [
+              _c("label", [_vm._v("Nghệ sĩ")]),
+              _vm._v(" "),
+              _c(
+                "select",
+                {
+                  directives: [
+                    {
+                      name: "model",
+                      rawName: "v-model",
+                      value: _vm.artist,
+                      expression: "artist"
+                    }
+                  ],
+                  staticClass: "form-control",
+                  on: {
+                    change: function($event) {
+                      var $$selectedVal = Array.prototype.filter
+                        .call($event.target.options, function(o) {
+                          return o.selected
+                        })
+                        .map(function(o) {
+                          var val = "_value" in o ? o._value : o.value
+                          return val
+                        })
+                      _vm.artist = $event.target.multiple
+                        ? $$selectedVal
+                        : $$selectedVal[0]
+                    }
+                  }
+                },
+                [
+                  _c("option", { attrs: { value: "" } }, [
+                    _vm._v("Chọn nghệ sĩ")
+                  ]),
+                  _vm._v(" "),
+                  _vm._l(_vm.listArtists, function(itemArtist) {
+                    return _c(
+                      "option",
+                      {
+                        key: itemArtist.id,
+                        domProps: { value: itemArtist.id }
+                      },
+                      [
+                        _vm._v(
+                          "\n                                " +
+                            _vm._s(itemArtist.name) +
+                            "\n                            "
+                        )
+                      ]
+                    )
+                  })
+                ],
+                2
+              ),
+              _vm._v(" "),
+              _vm.artist === ""
+                ? _c("span", { staticClass: "color-text-warring help-block" }, [
+                    _vm._v("Vui lòng chọn nghệ sĩ")
+                  ])
+                : _vm._e()
+            ]),
+            _vm._v(" "),
+            _vm.statusTypeFile !== ""
+              ? _c(
+                  "div",
+                  { staticClass: "form-group" },
+                  [
+                    _c("label", [_vm._v("Định dạng file")]),
+                    _vm._v(" "),
+                    _vm.statusTypeFile == "audio"
+                      ? _c("span", { staticClass: "badge badge-success" }, [
+                          _vm._v("Audio ")
+                        ])
+                      : _vm._e(),
+                    _vm._v(" "),
+                    _vm.statusTypeFile == "video"
+                      ? _c("span", { staticClass: "badge badge-danger" }, [
+                          _vm._v("Video")
+                        ])
+                      : _vm._e(),
+                    _vm._v(" "),
+                    _vm.statusTypeFile == "all"
+                      ? _c(
+                          "b-form-radio-group",
+                          {
+                            attrs: { id: "radios2", name: "radioSubComponent" },
+                            model: {
+                              value: _vm.typeFile,
+                              callback: function($$v) {
+                                _vm.typeFile = $$v
+                              },
+                              expression: "typeFile"
+                            }
+                          },
+                          [
+                            _c("b-form-radio", { attrs: { value: "audio" } }, [
+                              _vm._v("Audio")
+                            ]),
+                            _vm._v(" "),
+                            _c("b-form-radio", { attrs: { value: "video" } }, [
+                              _vm._v("Video")
+                            ])
+                          ],
+                          1
+                        )
+                      : _vm._e(),
+                    _vm._v(" "),
+                    _vm.typeFile === ""
+                      ? _c(
+                          "span",
+                          { staticClass: "color-text-warring help-block" },
+                          [_vm._v("Vui lòng chọn kiểu file")]
+                        )
+                      : _vm._e()
+                  ],
+                  1
+                )
+              : _vm._e(),
+            _vm._v(" "),
+            _c("div", { staticClass: "form-group" }, [
+              _c("label", [_vm._v("Xem trước file:")]),
+              _vm._v(" "),
+              _vm.typeFileDb === "audio"
+                ? _c(
+                    "audio",
+                    { staticStyle: { width: "100%" }, attrs: { controls: "" } },
+                    [
+                      _c("source", {
+                        attrs: {
+                          src:
+                            _vm.pathFileDb.search("http") === -1
+                              ? "/storage" + _vm.pathFileDb
+                              : _vm.pathFileDb,
+                          type: "audio/ogg"
+                        }
+                      }),
+                      _vm._v(" "),
+                      _c("source", {
+                        attrs: {
+                          src:
+                            _vm.pathFileDb.search("http") === -1
+                              ? "/storage" + _vm.pathFileDb
+                              : _vm.pathFileDb,
+                          type: "audio/mpeg"
+                        }
+                      }),
+                      _vm._v(
+                        "\n                            Your browser does not support the audio tag.\n                        "
+                      )
+                    ]
+                  )
+                : _vm._e(),
+              _vm._v(" "),
+              _vm.typeFileDb === "video"
+                ? _c(
+                    "video",
+                    { attrs: { width: "320", height: "240", controls: "" } },
+                    [
+                      _c("source", {
+                        attrs: {
+                          src:
+                            _vm.pathFileDb.search("http") === -1
+                              ? "/storage" + _vm.pathFileDb
+                              : _vm.pathFileDb,
+                          type: "video/mp4"
+                        }
+                      }),
+                      _vm._v(" "),
+                      _c("source", {
+                        attrs: {
+                          src:
+                            _vm.pathFileDb.search("http") === -1
+                              ? "/storage" + _vm.pathFileDb
+                              : _vm.pathFileDb,
+                          type: "video/ogg"
+                        }
+                      }),
+                      _vm._v(
+                        "\n                            Your browser does not support the video tag.\n                        "
+                      )
+                    ]
+                  )
+                : _vm._e()
+            ]),
+            _vm._v(" "),
+            _c("div", { staticClass: "form-group" }, [
+              _c("input", {
+                staticClass: "btn btn-danger",
+                attrs: { type: "button", value: "Chèn file khác" },
+                on: { click: _vm.insertFile }
+              })
+            ]),
+            _vm._v(" "),
+            _vm.statusInsertFile === true
+              ? _c("div", [
+                  _c(
+                    "div",
+                    { staticClass: "form-group" },
+                    [
+                      _c("label", [_vm._v("Kiểu dữ liệu nhập vào")]),
+                      _vm._v(" "),
+                      _c(
+                        "b-form-radio-group",
+                        {
+                          attrs: { id: "radios3", name: "radioFileInput" },
+                          model: {
+                            value: _vm.typeFileInput,
+                            callback: function($$v) {
+                              _vm.typeFileInput = $$v
+                            },
+                            expression: "typeFileInput"
+                          }
+                        },
+                        [
+                          _c("b-form-radio", { attrs: { value: "url" } }, [
+                            _vm._v("Nhập Url")
+                          ]),
+                          _vm._v(" "),
+                          _c("b-form-radio", { attrs: { value: "file" } }, [
+                            _vm._v("Upload file")
+                          ])
+                        ],
+                        1
+                      )
+                    ],
+                    1
+                  ),
+                  _vm._v(" "),
+                  _vm.typeFileInput === "url"
+                    ? _c("div", { staticClass: "form-group" }, [
+                        _c("label", [_vm._v("Nhập url của file")]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.url,
+                              expression: "url"
+                            }
+                          ],
+                          staticClass: "form-control",
+                          attrs: {
+                            type: "text",
+                            placeholder: "Nhập url file vào đây..."
+                          },
+                          domProps: { value: _vm.url },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.url = $event.target.value
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _vm.url === ""
+                          ? _c(
+                              "span",
+                              { staticClass: "color-text-warring help-block" },
+                              [_vm._v("Vui lòng nhập url file")]
+                            )
+                          : _vm._e()
+                      ])
+                    : _vm._e(),
+                  _vm._v(" "),
+                  _vm.typeFileInput === "file"
+                    ? _c("div", { staticClass: "form-group" }, [
+                        _c("label", [_vm._v("Chọn file")]),
+                        _vm._v(" "),
+                        _c("input", {
+                          staticClass: "form-control",
+                          attrs: { type: "file", name: "fileinput" },
+                          on: { change: _vm.onFileChange }
+                        }),
+                        _vm._v(" "),
+                        _vm.fileMedia === null
+                          ? _c(
+                              "span",
+                              { staticClass: "color-text-warring help-block" },
+                              [_vm._v("Vui lòng chọn file")]
+                            )
+                          : _vm._e()
+                      ])
+                    : _vm._e()
+                ])
+              : _vm._e()
+          ])
+        ]),
+        _vm._v(" "),
+        _c("div", { staticClass: "card-footer" }, [
+          _c(
+            "button",
+            {
+              staticClass: "btn btn-sm btn-primary",
+              attrs: { type: "submit" },
+              on: { click: _vm.submitFile }
+            },
+            [
+              _c("i", { staticClass: "fa fa-dot-circle-o" }),
+              _vm._v(" Submit\n                ")
+            ]
+          ),
+          _vm._v(" "),
+          _c(
+            "button",
+            {
+              staticClass: "btn btn-sm btn-danger",
+              attrs: { type: "reset" },
+              on: { click: _vm.resetForm }
+            },
+            [
+              _c("i", { staticClass: "fa fa-ban" }),
+              _vm._v("\n                    Reset\n                ")
+            ]
+          )
+        ])
+      ])
+    ])
+  ])
+}
+var staticRenderFns = [
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("ol", { staticClass: "breadcrumb" }, [
+      _c("li", { staticClass: "breadcrumb-item" }, [_vm._v("Home")]),
+      _vm._v(" "),
+      _c("li", { staticClass: "breadcrumb-item" }, [
+        _c("a", { attrs: { href: "#" } }, [_vm._v("Admin")])
+      ]),
+      _vm._v(" "),
+      _c("li", { staticClass: "breadcrumb-item active" }, [
+        _vm._v("Dashboard")
+      ]),
+      _vm._v(" "),
+      _c("li", { staticClass: "breadcrumb-menu d-md-down-none" }, [
+        _c(
+          "div",
+          {
+            staticClass: "btn-group",
+            attrs: { role: "group", "aria-label": "Button group" }
+          },
+          [
+            _c("a", { staticClass: "btn", attrs: { href: "#" } }, [
+              _c("i", { staticClass: "icon-speech" })
+            ]),
+            _vm._v(" "),
+            _c("a", { staticClass: "btn", attrs: { href: "./" } }, [
+              _c("i", { staticClass: "icon-graph" }),
+              _vm._v("  Dashboard")
+            ]),
+            _vm._v(" "),
+            _c("a", { staticClass: "btn", attrs: { href: "#" } }, [
+              _c("i", { staticClass: "icon-settings" }),
+              _vm._v("  Settings")
+            ])
+          ]
+        )
+      ])
+    ])
+  }
+]
+render._withStripped = true
+module.exports = { render: render, staticRenderFns: staticRenderFns }
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+    require("vue-hot-reload-api")      .rerender("data-v-1306c036", module.exports)
+  }
+}
+
+/***/ }),
+/* 256 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var disposed = false
+var normalizeComponent = __webpack_require__(5)
+/* script */
+var __vue_script__ = __webpack_require__(257)
+/* template */
+var __vue_template__ = __webpack_require__(258)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
@@ -49000,7 +50130,7 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 252 */
+/* 257 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -49209,7 +50339,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 });
 
 /***/ }),
-/* 253 */
+/* 258 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
@@ -49444,15 +50574,15 @@ if (false) {
 }
 
 /***/ }),
-/* 254 */
+/* 259 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var disposed = false
 var normalizeComponent = __webpack_require__(5)
 /* script */
-var __vue_script__ = __webpack_require__(255)
+var __vue_script__ = __webpack_require__(260)
 /* template */
-var __vue_template__ = __webpack_require__(256)
+var __vue_template__ = __webpack_require__(261)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
@@ -49492,7 +50622,7 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 255 */
+/* 260 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -49858,7 +50988,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 });
 
 /***/ }),
-/* 256 */
+/* 261 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
@@ -50345,15 +51475,15 @@ if (false) {
 }
 
 /***/ }),
-/* 257 */
+/* 262 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var disposed = false
 var normalizeComponent = __webpack_require__(5)
 /* script */
-var __vue_script__ = __webpack_require__(258)
+var __vue_script__ = __webpack_require__(263)
 /* template */
-var __vue_template__ = __webpack_require__(259)
+var __vue_template__ = __webpack_require__(264)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
@@ -50393,7 +51523,7 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 258 */
+/* 263 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -50723,7 +51853,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 });
 
 /***/ }),
-/* 259 */
+/* 264 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
@@ -51251,15 +52381,15 @@ if (false) {
 }
 
 /***/ }),
-/* 260 */
+/* 265 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var disposed = false
 var normalizeComponent = __webpack_require__(5)
 /* script */
-var __vue_script__ = __webpack_require__(261)
+var __vue_script__ = __webpack_require__(266)
 /* template */
-var __vue_template__ = __webpack_require__(262)
+var __vue_template__ = __webpack_require__(267)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
@@ -51299,7 +52429,7 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 261 */
+/* 266 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -51606,7 +52736,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 });
 
 /***/ }),
-/* 262 */
+/* 267 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
@@ -52036,1004 +53166,10 @@ if (false) {
 }
 
 /***/ }),
-/* 263 */
+/* 268 */
 /***/ (function(module, exports) {
 
 // removed by extract-text-webpack-plugin
-
-/***/ }),
-/* 264 */,
-/* 265 */,
-/* 266 */,
-/* 267 */,
-/* 268 */,
-/* 269 */,
-/* 270 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var disposed = false
-var normalizeComponent = __webpack_require__(5)
-/* script */
-var __vue_script__ = __webpack_require__(271)
-/* template */
-var __vue_template__ = __webpack_require__(272)
-/* template functional */
-var __vue_template_functional__ = false
-/* styles */
-var __vue_styles__ = null
-/* scopeId */
-var __vue_scopeId__ = null
-/* moduleIdentifier (server only) */
-var __vue_module_identifier__ = null
-var Component = normalizeComponent(
-  __vue_script__,
-  __vue_template__,
-  __vue_template_functional__,
-  __vue_styles__,
-  __vue_scopeId__,
-  __vue_module_identifier__
-)
-Component.options.__file = "resources/assets/js/components/file/edit.vue"
-if (Component.esModule && Object.keys(Component.esModule).some(function (key) {  return key !== "default" && key.substr(0, 2) !== "__"})) {  console.error("named exports are not supported in *.vue files.")}
-
-/* hot reload */
-if (false) {(function () {
-  var hotAPI = require("vue-hot-reload-api")
-  hotAPI.install(require("vue"), false)
-  if (!hotAPI.compatible) return
-  module.hot.accept()
-  if (!module.hot.data) {
-    hotAPI.createRecord("data-v-1306c036", Component.options)
-  } else {
-    hotAPI.reload("data-v-1306c036", Component.options)
-' + '  }
-  module.hot.dispose(function (data) {
-    disposed = true
-  })
-})()}
-
-module.exports = Component.exports
-
-
-/***/ }),
-/* 271 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-
-/* harmony default export */ __webpack_exports__["default"] = ({
-    props: ['id'],
-    data: function data() {
-        return {
-            listCategories: [],
-            listGenres: [],
-            listArtists: [],
-            typeFileInput: "url",
-            typeFile: "audio",
-            statusTypeFile: "",
-            thumbnail: null,
-            thumbnailShow: null,
-            name: "",
-            category: "",
-            genre: "",
-            artist: "",
-            url: "",
-            fileMedia: null,
-            status: true,
-            statusInsetImage: false
-        };
-    },
-    mounted: function mounted() {
-        this.getInformationFile();
-    },
-
-    methods: {
-        getInformationFile: function getInformationFile() {
-            var _this = this;
-
-            window.axios.put('/api/file/edit/get-information/' + this.id).then(function (response) {
-                var file = response.data.file;
-                _this.listArtists = response.data.artists;
-                _this.listCategories = response.data.categories;
-                _this.listGenres = response.data.genres;
-                _this.name = file.name;
-                _this.category = file.category_id;
-                _this.genre = file.genre_id;
-                _this.artist = file.artist_id;
-                _this.thumbnailShow = '/storage' + file.thumbnail;
-                _this.typeFile = file.type;
-            });
-        },
-        insertImage: function insertImage() {
-            this.statusInsetImage = true;
-        },
-        submitFile: function submitFile() {
-            if (this.name === "" || this.thumbnail === null || this.category === "" || this.genre === "" || this.artist === "") {
-                this.$swal({
-                    title: "Error...",
-                    text: "Vui lòng điền đầy đủ thông tin!",
-                    type: "error"
-                });
-
-                return;
-            }
-            var formData = new FormData();
-            formData.append("name", this.name);
-            formData.append("typeFile", this.typeFile);
-            formData.append("thumbnail", this.thumbnail);
-            formData.append("category", this.category.id);
-            formData.append("genre", this.genre);
-            formData.append("artist", this.artist);
-            formData.append("status", this.status);
-            formData.append("user", window.cms.auth);
-            formData.append("typeFileInput", this.typeFileInput);
-            if (this.typeFileInput === "file") {
-                if (this.fileMedia === null) {
-                    this.$swal({
-                        title: "Error...",
-                        text: "Vui lòng chèn file!",
-                        type: "error"
-                    });
-                    return;
-                }
-                formData.append("file", this.fileMedia);
-            } else if (this.typeFileInput === "url") {
-                if (this.url === "") {
-                    this.$swal({
-                        title: "Error...",
-                        text: "Vui lòng chèn url!",
-                        type: "error"
-                    });
-                    return;
-                }
-                formData.append("url", this.url);
-            } else {
-                return;
-            }
-            var request = new XMLHttpRequest();
-            request.onreadystatechange = function () {
-                if (this.status == 200) {
-                    console.log(" up file ok");
-                }
-            }.bind(this);
-            request.open("POST", "/api/file/add");
-            request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
-            request.send(formData);
-            window.location = "/cms/file/list";
-        },
-        onThumbnailChange: function onThumbnailChange(e) {
-            var files = e.target.files || e.dataTransfer.files;
-            if (files[0].type.search("image") !== -1) {
-                this.thumbnail = files[0];
-                if (!files.length) return;
-                this.createImage(files[0]);
-            } else {
-                this.$swal({
-                    title: "Error...",
-                    text: "Vui lòng chọn đúng định dạng file",
-                    type: "error"
-                });
-                this.thumbnailShow = null;
-            }
-        },
-        createImage: function createImage(file) {
-            var reader = new FileReader();
-            var vm = this;
-            reader.onload = function (e) {
-                vm.thumbnailShow = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        },
-        onFileChange: function onFileChange(e) {
-            var file = e.target.files || e.dataTransfer.files;
-            if (this.typeFile === "audio") {
-                if (file[0].type.search("audio") !== -1) {
-                    this.fileMedia = file[0];
-                } else {
-                    this.$swal({
-                        title: "Error...",
-                        text: "Vui lòng chọn đúng định dạng file AUDIO(mp3,acc,...)",
-                        type: "error"
-                    });
-                }
-            } else if (this.typeFile === "video") {
-                if (file[0].type.search("video") !== -1) {
-                    this.fileMedia = file[0];
-                } else {
-                    this.$swal({
-                        title: "Error...",
-                        text: "Vui lòng chọn đúng định dạng file VIDEO(mp4,flv,avi,...)",
-                        type: "error"
-                    });
-                }
-            }
-        },
-        resetForm: function resetForm() {
-            this.typeFileInput = "url";
-            this.typeFile = "audio";
-            this.thumbnail = null;
-            this.thumbnailShow = null;
-            this.statusTypeFile = "";
-            this.name = "";
-            this.category = "";
-            this.genre = "";
-            this.artist = "";
-            this.url = "";
-            this.fileMedia = null;
-            this.status = true;
-        }
-    }
-
-});
-
-/***/ }),
-/* 272 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var render = function() {
-  var _vm = this
-  var _h = _vm.$createElement
-  var _c = _vm._self._c || _h
-  return _c("div", [
-    _vm._m(0, false, false),
-    _vm._v(" "),
-    _c("div", { staticClass: "container" }, [
-      _c("div", { staticClass: "card" }, [
-        _c("div", { staticClass: "card-header" }, [
-          _vm._v("\n                Nhập thông tin file\n            ")
-        ]),
-        _vm._v(" "),
-        _c("div", { staticClass: "card-body" }, [
-          _c("form", { attrs: { action: "", method: "post" } }, [
-            _c("div", { staticClass: "form-group" }, [
-              _c("label", [_vm._v("Tên file")]),
-              _vm._v(" "),
-              _c("input", {
-                directives: [
-                  {
-                    name: "model",
-                    rawName: "v-model",
-                    value: _vm.name,
-                    expression: "name"
-                  }
-                ],
-                staticClass: "form-control",
-                attrs: { type: "text", placeholder: "Nhập tên file.." },
-                domProps: { value: _vm.name },
-                on: {
-                  input: function($event) {
-                    if ($event.target.composing) {
-                      return
-                    }
-                    _vm.name = $event.target.value
-                  }
-                }
-              }),
-              _vm._v(" "),
-              _vm.name === ""
-                ? _c("span", { staticClass: "color-text-warring help-block" }, [
-                    _vm._v("Vui lòng nhập tên file")
-                  ])
-                : _vm._e()
-            ]),
-            _vm._v(" "),
-            _c("div", { staticClass: "form-group" }, [
-              _vm.thumbnailShow === null
-                ? _c("label", [_vm._v("Chọn ảnh cho file")])
-                : _vm._e(),
-              _vm._v(" "),
-              _vm.thumbnailShow !== null
-                ? _c("img", {
-                    staticClass: "img-thumbnail",
-                    staticStyle: { "margin-bottom": "20px" },
-                    attrs: {
-                      src: _vm.thumbnailShow,
-                      alt: "Cinque Terre",
-                      width: "200",
-                      height: "200"
-                    }
-                  })
-                : _vm._e(),
-              _vm._v(" "),
-              _c("br"),
-              _vm._v(" "),
-              _c("input", {
-                staticClass: "btn btn-success",
-                attrs: { type: "button", value: "Chọn ảnh mới" },
-                on: { click: _vm.insertImage }
-              }),
-              _vm._v(" "),
-              _c("br"),
-              _vm._v(" "),
-              _vm.statusInsetImage === true
-                ? _c("input", {
-                    staticClass: "form-control",
-                    attrs: { type: "file", name: "thumnail" },
-                    on: { change: _vm.onThumbnailChange }
-                  })
-                : _vm._e(),
-              _vm._v(" "),
-              _vm.thumbnailShow === null
-                ? _c("span", { staticClass: "help-block color-text-warring" }, [
-                    _vm._v("Vui lòng chọn ảnh cho file tải lên")
-                  ])
-                : _vm._e()
-            ]),
-            _vm._v(" "),
-            _c("div", { staticClass: "form-group" }, [
-              _c("label", [_vm._v("Trạng thái hoạt động")]),
-              _vm._v(" "),
-              _c(
-                "label",
-                { staticClass: "switch switch-lg switch-3d switch-primary" },
-                [
-                  _c("input", {
-                    directives: [
-                      {
-                        name: "model",
-                        rawName: "v-model",
-                        value: _vm.status,
-                        expression: "status"
-                      }
-                    ],
-                    staticClass: "switch-input",
-                    attrs: { type: "checkbox", checked: "" },
-                    domProps: {
-                      checked: Array.isArray(_vm.status)
-                        ? _vm._i(_vm.status, null) > -1
-                        : _vm.status
-                    },
-                    on: {
-                      change: function($event) {
-                        var $$a = _vm.status,
-                          $$el = $event.target,
-                          $$c = $$el.checked ? true : false
-                        if (Array.isArray($$a)) {
-                          var $$v = null,
-                            $$i = _vm._i($$a, $$v)
-                          if ($$el.checked) {
-                            $$i < 0 && (_vm.status = $$a.concat([$$v]))
-                          } else {
-                            $$i > -1 &&
-                              (_vm.status = $$a
-                                .slice(0, $$i)
-                                .concat($$a.slice($$i + 1)))
-                          }
-                        } else {
-                          _vm.status = $$c
-                        }
-                      }
-                    }
-                  }),
-                  _vm._v(" "),
-                  _c("span", { staticClass: "switch-label" }),
-                  _vm._v(" "),
-                  _c("span", { staticClass: "switch-handle" })
-                ]
-              )
-            ]),
-            _vm._v(" "),
-            _c("div", { staticClass: "form-group" }, [
-              _c("label", [_vm._v("Chuyên mục")]),
-              _vm._v(" "),
-              _c(
-                "select",
-                {
-                  directives: [
-                    {
-                      name: "model",
-                      rawName: "v-model",
-                      value: _vm.category,
-                      expression: "category"
-                    }
-                  ],
-                  staticClass: "form-control",
-                  on: {
-                    change: function($event) {
-                      var $$selectedVal = Array.prototype.filter
-                        .call($event.target.options, function(o) {
-                          return o.selected
-                        })
-                        .map(function(o) {
-                          var val = "_value" in o ? o._value : o.value
-                          return val
-                        })
-                      _vm.category = $event.target.multiple
-                        ? $$selectedVal
-                        : $$selectedVal[0]
-                    }
-                  }
-                },
-                [
-                  _c("option", { attrs: { value: "" } }, [
-                    _vm._v("Chọn chuyên mục")
-                  ]),
-                  _vm._v(" "),
-                  _vm._l(_vm.listCategories, function(itemCategory) {
-                    return _c(
-                      "option",
-                      {
-                        key: itemCategory.id,
-                        domProps: { value: itemCategory.id }
-                      },
-                      [
-                        _vm._v(
-                          _vm._s(itemCategory.name) +
-                            "\n                            "
-                        )
-                      ]
-                    )
-                  })
-                ],
-                2
-              ),
-              _vm._v(" "),
-              _vm.category === ""
-                ? _c("span", { staticClass: "color-text-warring help-block" }, [
-                    _vm._v("Vui lòng chọn chuyên mục")
-                  ])
-                : _vm._e()
-            ]),
-            _vm._v(" "),
-            _c("div", { staticClass: "form-group" }, [
-              _c("label", [_vm._v("Thể loại")]),
-              _vm._v(" "),
-              _c(
-                "select",
-                {
-                  directives: [
-                    {
-                      name: "model",
-                      rawName: "v-model",
-                      value: _vm.genre,
-                      expression: "genre"
-                    }
-                  ],
-                  staticClass: "form-control",
-                  on: {
-                    change: function($event) {
-                      var $$selectedVal = Array.prototype.filter
-                        .call($event.target.options, function(o) {
-                          return o.selected
-                        })
-                        .map(function(o) {
-                          var val = "_value" in o ? o._value : o.value
-                          return val
-                        })
-                      _vm.genre = $event.target.multiple
-                        ? $$selectedVal
-                        : $$selectedVal[0]
-                    }
-                  }
-                },
-                [
-                  _c("option", { attrs: { value: "" } }, [
-                    _vm._v("Chọn thể  loại")
-                  ]),
-                  _vm._v(" "),
-                  _vm._l(_vm.listGenres, function(itemGenre) {
-                    return _c(
-                      "option",
-                      { key: itemGenre.id, domProps: { value: itemGenre.id } },
-                      [
-                        _vm._v(
-                          "\n                                " +
-                            _vm._s(itemGenre.name) +
-                            "\n                            "
-                        )
-                      ]
-                    )
-                  })
-                ],
-                2
-              ),
-              _vm._v(" "),
-              _vm.genre === ""
-                ? _c("span", { staticClass: "color-text-warring help-block" }, [
-                    _vm._v("Vui lòng chọn thể loại")
-                  ])
-                : _vm._e()
-            ]),
-            _vm._v(" "),
-            _c("div", { staticClass: "form-group" }, [
-              _c("label", [_vm._v("Nghệ sĩ")]),
-              _vm._v(" "),
-              _c(
-                "select",
-                {
-                  directives: [
-                    {
-                      name: "model",
-                      rawName: "v-model",
-                      value: _vm.artist,
-                      expression: "artist"
-                    }
-                  ],
-                  staticClass: "form-control",
-                  on: {
-                    change: function($event) {
-                      var $$selectedVal = Array.prototype.filter
-                        .call($event.target.options, function(o) {
-                          return o.selected
-                        })
-                        .map(function(o) {
-                          var val = "_value" in o ? o._value : o.value
-                          return val
-                        })
-                      _vm.artist = $event.target.multiple
-                        ? $$selectedVal
-                        : $$selectedVal[0]
-                    }
-                  }
-                },
-                [
-                  _c("option", { attrs: { value: "" } }, [
-                    _vm._v("Chọn nghệ sĩ")
-                  ]),
-                  _vm._v(" "),
-                  _vm._l(_vm.listArtists, function(itemArtist) {
-                    return _c(
-                      "option",
-                      {
-                        key: itemArtist.id,
-                        domProps: { value: itemArtist.id }
-                      },
-                      [
-                        _vm._v(
-                          "\n                                " +
-                            _vm._s(itemArtist.name) +
-                            "\n                            "
-                        )
-                      ]
-                    )
-                  })
-                ],
-                2
-              ),
-              _vm._v(" "),
-              _vm.artist === ""
-                ? _c("span", { staticClass: "color-text-warring help-block" }, [
-                    _vm._v("Vui lòng chọn nghệ sĩ")
-                  ])
-                : _vm._e()
-            ]),
-            _vm._v(" "),
-            _vm.statusTypeFile !== ""
-              ? _c(
-                  "div",
-                  { staticClass: "form-group" },
-                  [
-                    _c("label", [_vm._v("Định dạng file")]),
-                    _vm._v(" "),
-                    _vm.statusTypeFile == "audio"
-                      ? _c("span", { staticClass: "badge badge-success" }, [
-                          _vm._v("Audio ")
-                        ])
-                      : _vm._e(),
-                    _vm._v(" "),
-                    _vm.statusTypeFile == "video"
-                      ? _c("span", { staticClass: "badge badge-danger" }, [
-                          _vm._v("Video")
-                        ])
-                      : _vm._e(),
-                    _vm._v(" "),
-                    _vm.statusTypeFile == "all"
-                      ? _c(
-                          "b-form-radio-group",
-                          {
-                            attrs: { id: "radios2", name: "radioSubComponent" },
-                            model: {
-                              value: _vm.typeFile,
-                              callback: function($$v) {
-                                _vm.typeFile = $$v
-                              },
-                              expression: "typeFile"
-                            }
-                          },
-                          [
-                            _c("b-form-radio", { attrs: { value: "audio" } }, [
-                              _vm._v("Audio")
-                            ]),
-                            _vm._v(" "),
-                            _c("b-form-radio", { attrs: { value: "video" } }, [
-                              _vm._v("Video")
-                            ])
-                          ],
-                          1
-                        )
-                      : _vm._e(),
-                    _vm._v(" "),
-                    _vm.typeFile === ""
-                      ? _c(
-                          "span",
-                          { staticClass: "color-text-warring help-block" },
-                          [_vm._v("Vui lòng chọn kiểu file")]
-                        )
-                      : _vm._e()
-                  ],
-                  1
-                )
-              : _vm._e(),
-            _vm._v(" "),
-            _c(
-              "div",
-              { staticClass: "form-group" },
-              [
-                _c("label", [_vm._v("Kiểu dữ liệu nhập vào")]),
-                _vm._v(" "),
-                _c(
-                  "b-form-radio-group",
-                  {
-                    attrs: { id: "radios3", name: "radioFileInput" },
-                    model: {
-                      value: _vm.typeFileInput,
-                      callback: function($$v) {
-                        _vm.typeFileInput = $$v
-                      },
-                      expression: "typeFileInput"
-                    }
-                  },
-                  [
-                    _c("b-form-radio", { attrs: { value: "url" } }, [
-                      _vm._v("Nhập Url")
-                    ]),
-                    _vm._v(" "),
-                    _c("b-form-radio", { attrs: { value: "file" } }, [
-                      _vm._v("Upload file")
-                    ])
-                  ],
-                  1
-                )
-              ],
-              1
-            ),
-            _vm._v(" "),
-            _vm.typeFileInput === "url"
-              ? _c("div", { staticClass: "form-group" }, [
-                  _c("label", [_vm._v("Nhập url của file")]),
-                  _vm._v(" "),
-                  _c("input", {
-                    directives: [
-                      {
-                        name: "model",
-                        rawName: "v-model",
-                        value: _vm.url,
-                        expression: "url"
-                      }
-                    ],
-                    staticClass: "form-control",
-                    attrs: {
-                      type: "text",
-                      placeholder: "Nhập url file vào đây..."
-                    },
-                    domProps: { value: _vm.url },
-                    on: {
-                      input: function($event) {
-                        if ($event.target.composing) {
-                          return
-                        }
-                        _vm.url = $event.target.value
-                      }
-                    }
-                  }),
-                  _vm._v(" "),
-                  _vm.url === ""
-                    ? _c(
-                        "span",
-                        { staticClass: "color-text-warring help-block" },
-                        [_vm._v("Vui lòng nhập url file")]
-                      )
-                    : _vm._e()
-                ])
-              : _c("div", { staticClass: "form-group" }, [
-                  _c("label", [_vm._v("Chọn file")]),
-                  _vm._v(" "),
-                  _vm.itemFile.type === "audio"
-                    ? _c(
-                        "audio",
-                        {
-                          staticStyle: { width: "100%" },
-                          attrs: { controls: "" }
-                        },
-                        [
-                          _c("source", {
-                            attrs: {
-                              src:
-                                _vm.itemFile.path.search("http") === -1
-                                  ? "/storage" + _vm.itemFile.path
-                                  : _vm.itemFile.path,
-                              type: "audio/ogg"
-                            }
-                          }),
-                          _vm._v(" "),
-                          _c("source", {
-                            attrs: {
-                              src:
-                                _vm.itemFile.path.search("http") === -1
-                                  ? "/storage" + _vm.itemFile.path
-                                  : _vm.itemFile.path,
-                              type: "audio/mpeg"
-                            }
-                          }),
-                          _vm._v(
-                            "\n                            Your browser does not support the audio tag.\n                        "
-                          )
-                        ]
-                      )
-                    : _vm._e(),
-                  _vm._v(" "),
-                  _vm.itemFile.type === "video"
-                    ? _c(
-                        "video",
-                        {
-                          attrs: { width: "100%", height: "auto", controls: "" }
-                        },
-                        [
-                          _c("source", {
-                            attrs: {
-                              src:
-                                _vm.itemFile.path.search("http") === -1
-                                  ? "/storage" + _vm.itemFile.path
-                                  : _vm.itemFile.path,
-                              type: "video/mp4"
-                            }
-                          }),
-                          _vm._v(" "),
-                          _c("source", {
-                            attrs: {
-                              src:
-                                _vm.itemFile.path.search("http") === -1
-                                  ? "/storage" + _vm.itemFile.path
-                                  : _vm.itemFile.path,
-                              type: "video/ogg"
-                            }
-                          }),
-                          _vm._v(
-                            "\n                            Your browser does not support the video tag.\n                        "
-                          )
-                        ]
-                      )
-                    : _vm._e(),
-                  _vm._v(" "),
-                  _c("input", {
-                    staticClass: "form-control",
-                    attrs: { type: "file", name: "fileinput" },
-                    on: { change: _vm.onFileChange }
-                  }),
-                  _vm._v(" "),
-                  _vm.fileMedia === null
-                    ? _c(
-                        "span",
-                        { staticClass: "color-text-warring help-block" },
-                        [_vm._v("Vui lòng chọn file")]
-                      )
-                    : _vm._e()
-                ])
-          ])
-        ]),
-        _vm._v(" "),
-        _c("div", { staticClass: "card-footer" }, [
-          _c(
-            "button",
-            {
-              staticClass: "btn btn-sm btn-primary",
-              attrs: { type: "submit" },
-              on: { click: _vm.submitFile }
-            },
-            [
-              _c("i", { staticClass: "fa fa-dot-circle-o" }),
-              _vm._v(" Submit\n                ")
-            ]
-          ),
-          _vm._v(" "),
-          _c(
-            "button",
-            {
-              staticClass: "btn btn-sm btn-danger",
-              attrs: { type: "reset" },
-              on: { click: _vm.resetForm }
-            },
-            [
-              _c("i", { staticClass: "fa fa-ban" }),
-              _vm._v("\n                    Reset\n                ")
-            ]
-          )
-        ])
-      ])
-    ])
-  ])
-}
-var staticRenderFns = [
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("ol", { staticClass: "breadcrumb" }, [
-      _c("li", { staticClass: "breadcrumb-item" }, [_vm._v("Home")]),
-      _vm._v(" "),
-      _c("li", { staticClass: "breadcrumb-item" }, [
-        _c("a", { attrs: { href: "#" } }, [_vm._v("Admin")])
-      ]),
-      _vm._v(" "),
-      _c("li", { staticClass: "breadcrumb-item active" }, [
-        _vm._v("Dashboard")
-      ]),
-      _vm._v(" "),
-      _c("li", { staticClass: "breadcrumb-menu d-md-down-none" }, [
-        _c(
-          "div",
-          {
-            staticClass: "btn-group",
-            attrs: { role: "group", "aria-label": "Button group" }
-          },
-          [
-            _c("a", { staticClass: "btn", attrs: { href: "#" } }, [
-              _c("i", { staticClass: "icon-speech" })
-            ]),
-            _vm._v(" "),
-            _c("a", { staticClass: "btn", attrs: { href: "./" } }, [
-              _c("i", { staticClass: "icon-graph" }),
-              _vm._v("  Dashboard")
-            ]),
-            _vm._v(" "),
-            _c("a", { staticClass: "btn", attrs: { href: "#" } }, [
-              _c("i", { staticClass: "icon-settings" }),
-              _vm._v("  Settings")
-            ])
-          ]
-        )
-      ])
-    ])
-  }
-]
-render._withStripped = true
-module.exports = { render: render, staticRenderFns: staticRenderFns }
-if (false) {
-  module.hot.accept()
-  if (module.hot.data) {
-    require("vue-hot-reload-api")      .rerender("data-v-1306c036", module.exports)
-  }
-}
 
 /***/ })
 /******/ ]);

@@ -22,23 +22,26 @@
                 <div class="card-body">
                     <form action="" method="post">
                         <div class="form-group">
-                            <label >Tên file</label>
+                            <label>Tên file</label>
                             <input type="text" v-model="name" class="form-control" placeholder="Nhập tên file..">
                             <span class="color-text-warring help-block" v-if="name ==='' ">Vui lòng nhập tên file</span>
                         </div>
                         <div class="form-group">
-                            <label  v-if="thumbnailShow === null">Chọn ảnh cho file</label>
+                            <label v-if="thumbnailShow === null">Chọn ảnh cho file</label>
                             <img :src="thumbnailShow" class="img-thumbnail" style="margin-bottom: 20px"
                                  alt="Cinque Terre" width="200" height="200" v-if="thumbnailShow !== null">
                             <br>
                             <input v-on:click="insertImage" type="button" class="btn btn-success" value="Chọn ảnh mới"/>
                             <br>
-
-                            <input type="file" v-if="statusInsetImage===true" name="thumnail" v-on:change="onThumbnailChange" class="form-control">
-                            <span class="help-block color-text-warring" v-if="thumbnailShow === null">Vui lòng chọn ảnh cho file tải lên</span>
+                            <br>
+                            <input type="file" v-if="statusInsetImage===true" name="thumnail"
+                                   v-on:change="onThumbnailChange" class="form-control">
+                            <span class="help-block color-text-warring" v-if="thumbnailShow === null">
+                                Vui lòng chọn ảnh cho file tải lên
+                            </span>
                         </div>
                         <div class="form-group">
-                            <label >Trạng thái hoạt động</label>
+                            <label>Trạng thái hoạt động</label>
                             <label class="switch switch-lg switch-3d switch-primary">
                                 <input type="checkbox" v-model="status" class="switch-input" checked="">
                                 <span class="switch-label"></span>
@@ -46,7 +49,7 @@
                             </label>
                         </div>
                         <div class="form-group">
-                            <label >Chuyên mục</label>
+                            <label>Chuyên mục</label>
                             <select class="form-control" v-model="category">
                                 <option value="">Chọn chuyên mục</option>
 
@@ -58,7 +61,7 @@
                                   v-if="category===''">Vui lòng chọn chuyên mục</span>
                         </div>
                         <div class="form-group">
-                            <label >Thể loại</label>
+                            <label>Thể loại</label>
                             <select class="form-control" v-model="genre">
                                 <option value="">Chọn thể  loại</option>
                                 <option v-for="itemGenre in listGenres" :key="itemGenre.id" :value="itemGenre.id">
@@ -68,7 +71,7 @@
                             <span class="color-text-warring help-block" v-if="genre===''">Vui lòng chọn thể loại</span>
                         </div>
                         <div class="form-group">
-                            <label >Nghệ sĩ</label>
+                            <label>Nghệ sĩ</label>
                             <select class="form-control" v-model="artist">
                                 <option value="">Chọn nghệ sĩ</option>
                                 <option v-for="itemArtist in listArtists" :key="itemArtist.id" :value="itemArtist.id">
@@ -78,7 +81,7 @@
                             <span class="color-text-warring help-block" v-if="artist===''">Vui lòng chọn nghệ sĩ</span>
                         </div>
                         <div class="form-group" v-if="statusTypeFile!==''">
-                            <label >Định dạng file</label>
+                            <label>Định dạng file</label>
                             <span class="badge badge-success" v-if="statusTypeFile =='audio'">Audio </span>
                             <span class="badge badge-danger" v-if="statusTypeFile =='video'">Video</span>
                             <b-form-radio-group id="radios2" v-model="typeFile" v-if="statusTypeFile=='all'"
@@ -90,35 +93,49 @@
                                   v-if=" typeFile==='' ">Vui lòng chọn kiểu file</span>
                         </div>
                         <div class="form-group">
-                            <label >Kiểu dữ liệu nhập vào</label>
-                            <b-form-radio-group id="radios3" v-model="typeFileInput" name="radioFileInput">
-                                <b-form-radio value="url">Nhập Url</b-form-radio>
-                                <b-form-radio value="file">Upload file</b-form-radio>
-                            </b-form-radio-group>
-                        </div>
-                        <div class="form-group" v-if="typeFileInput=== 'url' ">
-                            <label >Nhập url của file</label>
-                            <input type="text" v-model="url" class="form-control"
-                                   placeholder="Nhập url file vào đây...">
-                            <span class="color-text-warring help-block" v-if="url===''">Vui lòng nhập url file</span>
-                        </div>
-                        <div class="form-group" v-else>
-                            <label >Chọn file</label>
-
-                            <audio controls v-if="itemFile.type==='audio'" style="width:100%">
-                                <source :src="itemFile.path.search('http')===-1?'/storage'+itemFile.path:itemFile.path" type="audio/ogg">
-                                <source :src="itemFile.path.search('http')===-1?'/storage'+itemFile.path:itemFile.path" type="audio/mpeg">
+                            <label>Xem trước file:</label>
+                            <audio controls v-if="typeFileDb==='audio'" style="width:100%">
+                                <source :src="pathFileDb.search('http')===-1?'/storage'+pathFileDb:pathFileDb"
+                                        type="audio/ogg">
+                                <source :src="pathFileDb.search('http')===-1?'/storage'+pathFileDb:pathFileDb"
+                                        type="audio/mpeg">
                                 Your browser does not support the audio tag.
                             </audio>
-                            <video width="100%" height="auto" controls v-if="itemFile.type==='video'">
-                                <source :src="itemFile.path.search('http')===-1?'/storage'+itemFile.path:itemFile.path" type="video/mp4">
-                                <source :src="itemFile.path.search('http')===-1?'/storage'+itemFile.path:itemFile.path" type="video/ogg">
+                            <video width="320" height="240" controls v-if="typeFileDb==='video'">
+                                <source :src="pathFileDb.search('http')===-1?'/storage'+pathFileDb:pathFileDb"
+                                        type="video/mp4">
+                                <source :src="pathFileDb.search('http')===-1?'/storage'+pathFileDb:pathFileDb"
+                                        type="video/ogg">
                                 Your browser does not support the video tag.
                             </video>
 
-                            <input type="file" v-on:change="onFileChange" name="fileinput" class="form-control">
-                            <span class="color-text-warring help-block"
-                                  v-if=" fileMedia===null ">Vui lòng chọn file</span>
+                        </div>
+                        <div class="form-group">
+                            <input type="button" v-on:click="insertFile" class="btn btn-danger" value="Chèn file khác">
+
+                        </div>
+                        <div v-if="statusInsertFile===true">
+                            <div class="form-group">
+                                <label>Kiểu dữ liệu nhập vào</label>
+                                <b-form-radio-group id="radios3" v-model="typeFileInput" name="radioFileInput">
+                                    <b-form-radio value="url">Nhập Url</b-form-radio>
+                                    <b-form-radio value="file">Upload file</b-form-radio>
+                                </b-form-radio-group>
+                            </div>
+                            <div class="form-group" v-if="typeFileInput=== 'url'">
+                                <label>Nhập url của file</label>
+                                <input type="text" v-model="url" class="form-control"
+                                       placeholder="Nhập url file vào đây...">
+                                <span class="color-text-warring help-block"
+                                      v-if="url===''">Vui lòng nhập url file</span>
+                            </div>
+                            <div class="form-group" v-if="typeFileInput=== 'file'">
+                                <label>Chọn file</label>
+
+                                <input type="file" v-on:change="onFileChange" name="fileinput" class="form-control">
+                                <span class="color-text-warring help-block"
+                                      v-if=" fileMedia===null ">Vui lòng chọn file</span>
+                            </div>
                         </div>
 
                     </form>
@@ -145,7 +162,7 @@
                 listCategories: [],
                 listGenres: [],
                 listArtists: [],
-                typeFileInput: "url",
+                typeFileInput: "",
                 typeFile: "audio",
                 statusTypeFile: "",
                 thumbnail: null,
@@ -157,11 +174,31 @@
                 url: "",
                 fileMedia: null,
                 status: true,
-                statusInsetImage:false
+                statusInsetImage: false,
+                statusInsertFile: false,
+                typeFileDb: null,
+                pathFileDb: null
             }
         },
         mounted() {
             this.getInformationFile();
+        },
+        watch: {
+            category: function () {
+                if (this.category.type == "video") {
+                    this.statusTypeFile = "video";
+                    this.typeFile = "video";
+                } else if (this.category.type == "audio") {
+                    this.statusTypeFile = "audio";
+                    this.typeFile = "audio";
+                } else if (this.category.type == "all") {
+                    this.statusTypeFile = "all";
+                    this.typeFile = "";
+                } else {
+                    this.statusTypeFile = "";
+                    this.typeFile = "";
+                }
+            }
         },
         methods: {
             getInformationFile() {
@@ -174,35 +211,34 @@
                     this.category = file.category_id;
                     this.genre = file.genre_id;
                     this.artist = file.artist_id;
-                    this.thumbnailShow = '/storage'+file.thumbnail;
+                    this.thumbnailShow = '/storage' + file.thumbnail;
                     this.typeFile = file.type;
+                    this.typeFileDb = file.type;
+                    this.pathFileDb = file.path;
+                    this.status = file.status;
                 });
             },
-            insertImage(){
-                this.statusInsetImage =true;
-            }
-            ,
+            insertImage() {
+                this.statusInsetImage = true;
+            },
+            insertFile() {
+                this.statusInsertFile = true;
+            },
             submitFile() {
-                if (
-                    this.name === "" ||
-                    this.thumbnail === null ||
-                    this.category === "" ||
-                    this.genre === "" ||
-                    this.artist === ""
-                ) {
+                if (this.name === null || this.name === "") {
                     this.$swal({
                         title: "Error...",
-                        text: "Vui lòng điền đầy đủ thông tin!",
+                        text: "Vui lòng nhập tên file!",
                         type: "error"
                     });
-
                     return;
                 }
                 var formData = new FormData();
+                formData.append("id", this.id);
                 formData.append("name", this.name);
                 formData.append("typeFile", this.typeFile);
                 formData.append("thumbnail", this.thumbnail);
-                formData.append("category", this.category.id);
+                formData.append("category", this.category);
                 formData.append("genre", this.genre);
                 formData.append("artist", this.artist);
                 formData.append("status", this.status);
@@ -228,19 +264,38 @@
                         return;
                     }
                     formData.append("url", this.url);
-                } else {
-                    return;
                 }
-                var request = new XMLHttpRequest();
-                request.onreadystatechange = function () {
-                    if (this.status == 200) {
-                        console.log(" up file ok");
+                window.axios.post('/api/file/edit/update', formData, {
+                    headers: {
+                    'Content-Type': 'multipart/form-data',
+                    "Authorization": "Bearer " + window.cms.api_token
                     }
-                }.bind(this);
-                request.open("POST", "/api/file/add");
-                request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
-                request.send(formData);
-                window.location = "/cms/file/list";
+                }).then(response=>{
+                    if(response.data.status==='ok'){
+                        Cookies.set('statusUpdateFile', 'ok');
+                        window.location = '/cms/file/list';
+                    }else{
+                        this.$swal({
+                        title: "Error...",
+                        text: "Cập nhật file không thành công! Vui lòng thử  lại?",
+                        type: "error"
+                    });
+                    }
+                })
+                // var request = new XMLHttpRequest();
+                // request.onreadystatechange = function () {
+                //     console.log(this);
+                //     if (this.readyState == 4 && this.status == 200) {
+                //         Cookies.set('statusUpdateFile', 'ok');
+                //         window.location = '/cms/file/list';
+                //         alert("ok");
+                //     } else if (this.status === 400 || this.status === 500) {
+                //         alert("Sửa file không thành công!");
+                //     }
+                // }.bind(this);
+                // request.open("POST", "/api/file/edit/update");
+                // request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
+                // request.send(formData);
             },
             onThumbnailChange(e) {
                 let files = e.target.files || e.dataTransfer.files;
@@ -307,3 +362,8 @@
 
     }
 </script>
+<style>
+    .color-text-warring {
+        color: red;
+    }
+</style>

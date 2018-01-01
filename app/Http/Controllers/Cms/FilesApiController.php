@@ -42,7 +42,7 @@ class FilesApiController extends Controller
         $file_db->category_id = $category_id;
         $file_db->artist_id = $artist;
         $file_db->genre_id = $genre;
-        $status=="true"? $file_db->status="yes":$file_db="no";
+        $status=="true"? $file_db->status="yes":$file_db->status="no";
         $file_db->user_create_id = $user[0];
         $file_db->user_publish_id= 0;
         $file_db->slug = str_slug($name);
@@ -160,6 +160,39 @@ class FilesApiController extends Controller
             ];
         }
         return about(404);
+    }
+    function editFile(Request $request){
+        $now = Carbon::now();
+        $file_db = File::find($request->id);
+        $user = json_decode($request->user);
+        $file_db->name = $request->name;
+        $file_db->slug = str_slug($request->name);
+        $request->status=="true"? $file_db->status="yes":$file_db->status="no";
+        $file_db->category_id = $request->category;
+        $file_db->artist_id =$request->artist;
+        $file_db->genre_id = $request->genre;
+        if($request->thumbnail){
+            Storage::delete('public'.$file_db->thumbnail);
+            $img_thumbnail = $request->file("thumbnail");
+            $path_thumbnail = 'public/thumnail/user_'.$user[0].'/'.$now->year.'/'.$now->month.'/'.$now->day;
+            $path_img_file = Storage::put($path_thumbnail,$img_thumbnail);
+            $file_db->thumbnail=str_replace('public','',$path_img_file);
+        }
+        if($request->typeFileInput!=""||$request->typeFileInput!=null){
+            if(strpos($file_db->path,'://')==false){
+                Storage::delete('public'.$file_db->path);
+            }
+            if($request->typeFileInput=="file"){
+                $file = $request->file("file");
+                $path = 'public/file/user_'.$user[0].'/'.$now->year.'/'.$now->month.'/'.$now->day;
+                $path_file = Storage::put($path,$file);
+                $file_db->path=str_replace('public','',$path_file);
+            }else{
+                $file_db->path= $request->url;
+            }
+        }
+        $file_db->save();
+        return ['status'=>'ok'];
     }
     //
 }
