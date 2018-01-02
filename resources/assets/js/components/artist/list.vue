@@ -181,23 +181,38 @@
 
                 formData.append('status', this.status);
                 formData.append('user', window.cms.auth);
-
-                var request = new XMLHttpRequest();
-                request.onreadystatechange = function () {
-                    if (this.readyState == 4 && this.status == 200) {
-                        console.log('ok');
+                 window.axios.post('/api/artist/add', formData, {
+                    headers: {
+                    'Content-Type': 'multipart/form-data',
+                    "Authorization": "Bearer " + window.cms.api_token
                     }
-                };
-                request.open("POST", "/api/artist/add");
-                request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
-                request.send(formData);
-                this.$swal({
-                    title: 'Ok',
-                    text: "Tạo tác giả thành công!",
-                    type: 'success'
-                });
-                this.cancelValue();
-                this.getListArtist();
+                }).then(response=>{
+                    if(response.data.status==='ok'){
+                    this.$swal({
+                        title: 'Ok',
+                        text: "Tạo tác giả thành công!",
+                        type: 'success'
+                    });
+                    this.cancelValue();
+                    this.getListArtist();
+                    }else{
+                        this.$swal({
+                        title: "Error...",
+                        text: "Tao tac giai không thành công! Vui lòng thử  lại?",
+                        type: "error"
+                    });
+                  }
+                })
+
+                // var request = new XMLHttpRequest();
+                // request.onreadystatechange = function () {
+                //     if (this.readyState == 4 && this.status == 200) {
+                //         console.log('ok');
+                //     }
+                // };
+                // request.open("POST", "/api/artist/add");
+                // request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
+                // request.send(formData);
             },
             onFileChange(e) {
                 let files = e.target.files || e.dataTransfer.files;
@@ -266,23 +281,39 @@
                 formData.append("id", this.artists_id);
                 formData.append('status', this.status);
                 formData.append('user', window.cms.auth);
-                var request = new XMLHttpRequest();
-                request.onreadystatechange = function () {
-                    if (this.readyState == 4 && this.status == 200) {
-                        console.log('ok');
-                    }
 
-                };
-                request.open("POST", "/api/artist/update");
-                request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
-                request.send(formData);
-                this.$swal({
-                    title: 'Ok',
-                    text: "Cap nhat thành công!",
-                    type: 'success'
-                });
-                this.cancelValue();
-                this.getListArtist();
+               window.axios.post('/api/artist/update', formData, {
+                    headers: {
+                    'Content-Type': 'multipart/form-data',
+                    "Authorization": "Bearer " + window.cms.api_token
+                    }
+                }).then(response=>{
+                    if(response.data.status==='ok'){
+                    this.$swal({
+                        title: 'Ok',
+                        text: "Cap nhat thành công!",
+                        type: 'success'
+                    });
+                    this.cancelValue();
+                    this.getListArtist();
+                    }else{
+                        this.$swal({
+                        title: "Error...",
+                        text: "Cap nhat không thành công! Vui lòng thử  lại?",
+                        type: "error"
+                    });
+                  }
+                })
+                // var request = new XMLHttpRequest();
+                // request.onreadystatechange = function () {
+                //     if (this.readyState == 4 && this.status == 200) {
+                //         console.log('ok');
+                //     }
+
+                // };
+                // request.open("POST", "/api/artist/update");
+                // request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
+                // request.send(formData);
             },
             getDataEdit(artist){
                 this.name = artist.name;

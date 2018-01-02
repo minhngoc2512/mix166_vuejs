@@ -33,10 +33,16 @@ class FilesApiController extends Controller
         }else{
             $path= $request->url;
         }
-        $img_thumbnail = $request->file("thumbnail");
+        if($request->file("thumbnail")==null||$request->file("thumbnail")==""){
+            $path_thumbnail_db= '/thumnail/user_1/2018/1/1/NCgDcQVCAzfX1qmfR61MuVg56k9uWQaFrQ7IyomT.png';
+        }else{
+            $img_thumbnail = $request->file("thumbnail");
         $path_thumbnail = 'public/thumnail/user_'.$user[0].'/'.$now->year.'/'.$now->month.'/'.$now->day;
         $path_img_file = Storage::put($path_thumbnail,$img_thumbnail);
         $path_thumbnail_db=str_replace('public','',$path_img_file);
+        }
+        
+
         $file_db = new File();
         $file_db->name = $name;
         $file_db->category_id = $category_id;
@@ -50,6 +56,7 @@ class FilesApiController extends Controller
         $file_db->type = $type;
         $file_db->thumbnail = $path_thumbnail_db;
         $file_db->save();
+        return ['status'=>'ok'];
     }
     function getList(){
         $categories = Category::all();

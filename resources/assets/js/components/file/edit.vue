@@ -49,12 +49,16 @@
                             </label>
                         </div>
                         <div class="form-group">
-                            <label>Chuyên mục</label>
-                            <select class="form-control" v-model="category">
+                            <label>Chuyên mục đã chọn: <span class="badge badge-danger">Video</span></label>
+                            <br/>
+                            <input type="button" v-on:click="insertCategory" class="btn btn-danger" value="Thay đổi chuyên mục" />
+                            <br/>
+                            <br/>
+                            <select class="form-control" v-if="statusInsetCategory"  v-model="category">
                                 <option value="">Chọn chuyên mục</option>
 
                                 <option v-for="itemCategory in listCategories" :key="itemCategory.id"
-                                        :value="itemCategory.id">{{itemCategory.name}}
+                                        :value="itemCategory">{{itemCategory.name}}
                                 </option>
                             </select>
                             <span class="color-text-warring help-block"
@@ -177,7 +181,9 @@
                 statusInsetImage: false,
                 statusInsertFile: false,
                 typeFileDb: null,
-                pathFileDb: null
+                pathFileDb: null,
+                statusInsetCategory : false
+                
             }
         },
         mounted() {
@@ -218,6 +224,9 @@
                     this.status = file.status;
                 });
             },
+               insertCategory() {
+                this.statusInsetCategory = true;
+            },
             insertImage() {
                 this.statusInsetImage = true;
             },
@@ -238,7 +247,7 @@
                 formData.append("name", this.name);
                 formData.append("typeFile", this.typeFile);
                 formData.append("thumbnail", this.thumbnail);
-                formData.append("category", this.category);
+                formData.append("category", this.category.id);
                 formData.append("genre", this.genre);
                 formData.append("artist", this.artist);
                 formData.append("status", this.status);
@@ -321,6 +330,7 @@
                 reader.readAsDataURL(file);
             },
             onFileChange(e) {
+                console.log('file loc');
                 let file = e.target.files || e.dataTransfer.files;
                 if (this.typeFile === "audio") {
                     if (file[0].type.search("audio") !== -1) {

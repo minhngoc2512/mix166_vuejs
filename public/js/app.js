@@ -47517,6 +47517,16 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         Cookies.remove("statusUpdateFile");
         return;
       }
+
+      if (Cookies.get("statusAddFile")) {
+        this.$swal({
+          title: "Ok",
+          text: "Tao file thành công!",
+          type: "success"
+        });
+        Cookies.remove("statusAddFile");
+        return;
+      }
       return;
     },
     getList: function getList() {
@@ -48316,7 +48326,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
       });
     },
     submitFile: function submitFile() {
-      if (this.name === "" || this.thumbnail === null || this.category === "" || this.genre === "" || this.artist === "") {
+      var _this4 = this;
+
+      if (this.name === "" || this.category === "" || this.genre === "" || this.artist === "") {
         this.$swal({
           title: "Error...",
           text: "Vui lòng điền đầy đủ thông tin!",
@@ -48358,18 +48370,37 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
       } else {
         return;
       }
-      var request = new XMLHttpRequest();
-      request.onreadystatechange = function () {
-        if (this.status === 200) {
-          alert("Tạo file thành công!");
-          window.location = "/cms/file/list";
-        } else {
-          alert("Tạo file không thành công!");
+
+      window.axios.post('/api/file/add', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          "Authorization": "Bearer " + window.cms.api_token
         }
-      }.bind(this);
-      request.open("POST", "/api/file/add");
-      request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
-      request.send(formData);
+      }).then(function (response) {
+        if (response.data.status === 'ok') {
+          Cookies.set('statusAddFile', 'ok');
+          window.location = '/cms/file/list';
+        } else {
+          _this4.$swal({
+            title: "Error...",
+            text: "Tao file không thành công! Vui lòng thử  lại?",
+            type: "error"
+          });
+        }
+      });
+
+      // var request = new XMLHttpRequest();
+      // request.onreadystatechange = function() {
+      //   if (this.status === 200) {
+      //    alert("Tạo file thành công!");
+      //    window.location = "/cms/file/list";
+      //   }else{
+      //       alert("Tạo file không thành công!");
+      //   }
+      // }.bind(this);
+      // request.open("POST", "/api/file/add");
+      // request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
+      // request.send(formData);
     },
     onThumbnailChange: function onThumbnailChange(e) {
       var files = e.target.files || e.dataTransfer.files;
@@ -49219,6 +49250,10 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
+//
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     props: ['id'],
@@ -49242,7 +49277,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             statusInsetImage: false,
             statusInsertFile: false,
             typeFileDb: null,
-            pathFileDb: null
+            pathFileDb: null,
+            statusInsetCategory: false
+
         };
     },
     mounted: function mounted() {
@@ -49286,6 +49323,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 _this.status = file.status;
             });
         },
+        insertCategory: function insertCategory() {
+            this.statusInsetCategory = true;
+        },
         insertImage: function insertImage() {
             this.statusInsetImage = true;
         },
@@ -49308,7 +49348,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             formData.append("name", this.name);
             formData.append("typeFile", this.typeFile);
             formData.append("thumbnail", this.thumbnail);
-            formData.append("category", this.category);
+            formData.append("category", this.category.id);
             formData.append("genre", this.genre);
             formData.append("artist", this.artist);
             formData.append("status", this.status);
@@ -49391,6 +49431,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             reader.readAsDataURL(file);
         },
         onFileChange: function onFileChange(e) {
+            console.log('file loc');
             var file = e.target.files || e.dataTransfer.files;
             if (this.typeFile === "audio") {
                 if (file[0].type.search("audio") !== -1) {
@@ -49584,59 +49625,73 @@ var render = function() {
             ]),
             _vm._v(" "),
             _c("div", { staticClass: "form-group" }, [
-              _c("label", [_vm._v("Chuyên mục")]),
+              _vm._m(1, false, false),
               _vm._v(" "),
-              _c(
-                "select",
-                {
-                  directives: [
+              _c("br"),
+              _vm._v(" "),
+              _c("input", {
+                staticClass: "btn btn-danger",
+                attrs: { type: "button", value: "Thay đổi chuyên mục" },
+                on: { click: _vm.insertCategory }
+              }),
+              _vm._v(" "),
+              _c("br"),
+              _vm._v(" "),
+              _c("br"),
+              _vm._v(" "),
+              _vm.statusInsetCategory
+                ? _c(
+                    "select",
                     {
-                      name: "model",
-                      rawName: "v-model",
-                      value: _vm.category,
-                      expression: "category"
-                    }
-                  ],
-                  staticClass: "form-control",
-                  on: {
-                    change: function($event) {
-                      var $$selectedVal = Array.prototype.filter
-                        .call($event.target.options, function(o) {
-                          return o.selected
-                        })
-                        .map(function(o) {
-                          var val = "_value" in o ? o._value : o.value
-                          return val
-                        })
-                      _vm.category = $event.target.multiple
-                        ? $$selectedVal
-                        : $$selectedVal[0]
-                    }
-                  }
-                },
-                [
-                  _c("option", { attrs: { value: "" } }, [
-                    _vm._v("Chọn chuyên mục")
-                  ]),
-                  _vm._v(" "),
-                  _vm._l(_vm.listCategories, function(itemCategory) {
-                    return _c(
-                      "option",
-                      {
-                        key: itemCategory.id,
-                        domProps: { value: itemCategory.id }
-                      },
-                      [
-                        _vm._v(
-                          _vm._s(itemCategory.name) +
-                            "\n                            "
+                      directives: [
+                        {
+                          name: "model",
+                          rawName: "v-model",
+                          value: _vm.category,
+                          expression: "category"
+                        }
+                      ],
+                      staticClass: "form-control",
+                      on: {
+                        change: function($event) {
+                          var $$selectedVal = Array.prototype.filter
+                            .call($event.target.options, function(o) {
+                              return o.selected
+                            })
+                            .map(function(o) {
+                              var val = "_value" in o ? o._value : o.value
+                              return val
+                            })
+                          _vm.category = $event.target.multiple
+                            ? $$selectedVal
+                            : $$selectedVal[0]
+                        }
+                      }
+                    },
+                    [
+                      _c("option", { attrs: { value: "" } }, [
+                        _vm._v("Chọn chuyên mục")
+                      ]),
+                      _vm._v(" "),
+                      _vm._l(_vm.listCategories, function(itemCategory) {
+                        return _c(
+                          "option",
+                          {
+                            key: itemCategory.id,
+                            domProps: { value: itemCategory }
+                          },
+                          [
+                            _vm._v(
+                              _vm._s(itemCategory.name) +
+                                "\n                            "
+                            )
+                          ]
                         )
-                      ]
-                    )
-                  })
-                ],
-                2
-              ),
+                      })
+                    ],
+                    2
+                  )
+                : _vm._e(),
               _vm._v(" "),
               _vm.category === ""
                 ? _c("span", { staticClass: "color-text-warring help-block" }, [
@@ -50068,6 +50123,15 @@ var staticRenderFns = [
           ]
         )
       ])
+    ])
+  },
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("label", [
+      _vm._v("Chuyên mục đã chọn: "),
+      _c("span", { staticClass: "badge badge-danger" }, [_vm._v("Video")])
     ])
   }
 ]
@@ -50799,6 +50863,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             }
         },
         addArtist: function addArtist() {
+            var _this2 = this;
+
             if (this.name == null) {
                 this.$swal({
                     title: 'Ok',
@@ -50813,23 +50879,38 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
             formData.append('status', this.status);
             formData.append('user', window.cms.auth);
-
-            var request = new XMLHttpRequest();
-            request.onreadystatechange = function () {
-                if (this.readyState == 4 && this.status == 200) {
-                    console.log('ok');
+            window.axios.post('/api/artist/add', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    "Authorization": "Bearer " + window.cms.api_token
                 }
-            };
-            request.open("POST", "/api/artist/add");
-            request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
-            request.send(formData);
-            this.$swal({
-                title: 'Ok',
-                text: "Tạo tác giả thành công!",
-                type: 'success'
+            }).then(function (response) {
+                if (response.data.status === 'ok') {
+                    _this2.$swal({
+                        title: 'Ok',
+                        text: "Tạo tác giả thành công!",
+                        type: 'success'
+                    });
+                    _this2.cancelValue();
+                    _this2.getListArtist();
+                } else {
+                    _this2.$swal({
+                        title: "Error...",
+                        text: "Tao tac giai không thành công! Vui lòng thử  lại?",
+                        type: "error"
+                    });
+                }
             });
-            this.cancelValue();
-            this.getListArtist();
+
+            // var request = new XMLHttpRequest();
+            // request.onreadystatechange = function () {
+            //     if (this.readyState == 4 && this.status == 200) {
+            //         console.log('ok');
+            //     }
+            // };
+            // request.open("POST", "/api/artist/add");
+            // request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
+            // request.send(formData);
         },
         onFileChange: function onFileChange(e) {
             var files = e.target.files || e.dataTransfer.files;
@@ -50858,10 +50939,10 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 },
                 allowOutsideClick: false
             }).then(function () {
-                var _this2 = this;
+                var _this3 = this;
 
                 window.axios.put('/api/artist/changeStatus/' + id + '/' + status).then(function (response) {
-                    _this2.info(response);
+                    _this3.info(response);
                 });
             }.bind(this));
         },
@@ -50883,6 +50964,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             }
         },
         editArtist: function editArtist() {
+            var _this4 = this;
+
             if (this.name == '') {
                 this.$swal({
                     title: 'Ok',
@@ -50897,22 +50980,39 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             formData.append("id", this.artists_id);
             formData.append('status', this.status);
             formData.append('user', window.cms.auth);
-            var request = new XMLHttpRequest();
-            request.onreadystatechange = function () {
-                if (this.readyState == 4 && this.status == 200) {
-                    console.log('ok');
+
+            window.axios.post('/api/artist/update', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    "Authorization": "Bearer " + window.cms.api_token
                 }
-            };
-            request.open("POST", "/api/artist/update");
-            request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
-            request.send(formData);
-            this.$swal({
-                title: 'Ok',
-                text: "Cap nhat thành công!",
-                type: 'success'
+            }).then(function (response) {
+                if (response.data.status === 'ok') {
+                    _this4.$swal({
+                        title: 'Ok',
+                        text: "Cap nhat thành công!",
+                        type: 'success'
+                    });
+                    _this4.cancelValue();
+                    _this4.getListArtist();
+                } else {
+                    _this4.$swal({
+                        title: "Error...",
+                        text: "Cap nhat không thành công! Vui lòng thử  lại?",
+                        type: "error"
+                    });
+                }
             });
-            this.cancelValue();
-            this.getListArtist();
+            // var request = new XMLHttpRequest();
+            // request.onreadystatechange = function () {
+            //     if (this.readyState == 4 && this.status == 200) {
+            //         console.log('ok');
+            //     }
+
+            // };
+            // request.open("POST", "/api/artist/update");
+            // request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
+            // request.send(formData);
         },
         getDataEdit: function getDataEdit(artist) {
             this.name = artist.name;
@@ -50928,24 +51028,24 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.artists_id = 0;
         },
         searchArtist: function searchArtist() {
-            var _this3 = this;
+            var _this5 = this;
 
             var next = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
 
             if (next == null) {
                 console.log(this.artist_name_search);
                 window.axios.get('/api/artist/search/' + this.artist_name_search).then(function (response) {
-                    _this3.artists = response.data.artist.data;
-                    _this3.currentPage = response.data.artist.current_page;
-                    _this3.total_row = response.data.artist.total;
-                    _this3.per_page = response.data.artist.per_page;
+                    _this5.artists = response.data.artist.data;
+                    _this5.currentPage = response.data.artist.current_page;
+                    _this5.total_row = response.data.artist.total;
+                    _this5.per_page = response.data.artist.per_page;
                 });
             } else {
                 window.axios.get(next).then(function (response) {
-                    _this3.artists = response.data.artist.data;
-                    _this3.currentPage = response.data.artist.current_page;
-                    _this3.total_row = response.data.artist.total;
-                    _this3.per_page = response.data.artist.per_page;
+                    _this5.artists = response.data.artist.data;
+                    _this5.currentPage = response.data.artist.current_page;
+                    _this5.total_row = response.data.artist.total;
+                    _this5.per_page = response.data.artist.per_page;
                 });
             }
         },
@@ -50962,22 +51062,22 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 },
                 allowOutsideClick: false
             }).then(function () {
-                var _this4 = this;
+                var _this6 = this;
 
                 window.axios.put('/api/artist/delete/' + id).then(function (response) {
                     if (response.data.error) {
-                        _this4.$swal({
+                        _this6.$swal({
                             title: 'Error...',
                             text: 'Xóa không thành công',
                             type: response.data.error
                         });
                     } else {
-                        _this4.$swal({
+                        _this6.$swal({
                             title: 'Ok',
                             text: "Xóa thành công !",
                             type: 'success'
                         });
-                        _this4.getListArtist();
+                        _this6.getListArtist();
                     }
                 });
             }.bind(this));

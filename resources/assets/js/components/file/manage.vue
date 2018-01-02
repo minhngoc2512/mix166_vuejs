@@ -136,6 +136,16 @@ export default {
         Cookies.remove("statusUpdateFile");
         return;
       }
+      
+       if (Cookies.get("statusAddFile")) {
+        this.$swal({
+          title: "Ok",
+          text: "Tao file thành công!",
+          type: "success"
+        });
+        Cookies.remove("statusAddFile");
+        return;
+      }
       return;
     },
     getList(page = 0) {

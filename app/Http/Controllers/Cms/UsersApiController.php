@@ -38,7 +38,7 @@ class UsersApiController extends Controller
 	function delete($id){
 		$user = User::find($id);
 		$user->delete();
-		return;
+		return ['status'=>'ok'];
 	}
     //
 }

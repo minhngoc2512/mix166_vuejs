@@ -169,7 +169,6 @@ export default {
     submitFile() {
       if (
         this.name === "" ||
-        this.thumbnail === null ||
         this.category === "" ||
         this.genre === "" ||
         this.artist === ""
@@ -215,18 +214,37 @@ export default {
       } else {
         return;
       }
-      var request = new XMLHttpRequest();
-      request.onreadystatechange = function() {
-        if (this.status === 200) {
-         alert("Tạo file thành công!");
-         window.location = "/cms/file/list";
-        }else{
-            alert("Tạo file không thành công!");
-        }
-      }.bind(this);
-      request.open("POST", "/api/file/add");
-      request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
-      request.send(formData);
+
+        window.axios.post('/api/file/add', formData, {
+                    headers: {
+                    'Content-Type': 'multipart/form-data',
+                    "Authorization": "Bearer " + window.cms.api_token
+                    }
+                }).then(response=>{
+                    if(response.data.status==='ok'){
+                        Cookies.set('statusAddFile', 'ok');
+                        window.location = '/cms/file/list';
+                    }else{
+                        this.$swal({
+                        title: "Error...",
+                        text: "Tao file không thành công! Vui lòng thử  lại?",
+                        type: "error"
+                    });
+                  }
+                })
+
+      // var request = new XMLHttpRequest();
+      // request.onreadystatechange = function() {
+      //   if (this.status === 200) {
+      //    alert("Tạo file thành công!");
+      //    window.location = "/cms/file/list";
+      //   }else{
+      //       alert("Tạo file không thành công!");
+      //   }
+      // }.bind(this);
+      // request.open("POST", "/api/file/add");
+      // request.setRequestHeader("Authorization", "Bearer " + window.cms.api_token);
+      // request.send(formData);
     },
     onThumbnailChange(e) {
       let files = e.target.files || e.dataTransfer.files;

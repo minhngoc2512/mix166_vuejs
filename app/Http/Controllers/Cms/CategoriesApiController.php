@@ -25,7 +25,7 @@ class CategoriesApiController extends Controller
 		}
 		$category->type = $request->selected;
 		$category->save();
-		return;
+        return ['status'=>'ok'];
 	}
 	function changeStatus($id,$status){
 		// dd($id,$status);
@@ -37,7 +37,7 @@ class CategoriesApiController extends Controller
 			$category->status='yes';
 		}
 		$category->save();
-		return;
+		return ['status'=>'ok'];
 	}
 	function update(Request $request ){
 			$category = Category::find($request->id);
@@ -49,12 +49,12 @@ class CategoriesApiController extends Controller
 			}
 			$category->type = $request->selected;
 			$category->save();
-			return ;
+	        return ['status'=>'ok'];
 	}
 	function delete($id){
 		$category = Category::find($id);
 		$category->delete();
-		return ;
+		return ['status'=>'ok'];
 	}
     //
 }

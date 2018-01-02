@@ -19,7 +19,7 @@ class GenresApiController extends Controller
 	function delete($id){
 		$genre = Genre::find($id);
 		$genre->delete();
-		return ;
+        return ['status'=>'ok'];
 	}
 
 	function update(Request $request){
@@ -32,7 +32,7 @@ class GenresApiController extends Controller
 			$genre->status='no';
 		}
 		$genre->save();
-		return;
+        return ['status'=>'ok'];
 	}
 
 	function addGenre(Request $request){
@@ -46,7 +46,7 @@ class GenresApiController extends Controller
 			$genre->status='no';
 		}
 		$genre->save();
-		return;
+		return ['status'=>'ok'];
 	}
 	function changeStatus($id,$status){
 		$genre = Genre::find($id);
@@ -56,7 +56,7 @@ class GenresApiController extends Controller
 			$genre->status = 'no';
 		}
 		$genre->save();
-		return ;
+        return ['status'=>'ok'];
 
 	}
     //

@@ -43,7 +43,7 @@ class ArtistsApiController extends Controller
 			$artist->status = 'no';
 		}
 		$artist->save();
-		return ;
+		return ['status'=>'ok'];
 		
 	}
 	function updateArtist(Request $request){
@@ -67,7 +67,7 @@ class ArtistsApiController extends Controller
 		$artist->thumbnail=str_replace('public', '',$path_file);
 		}
 		$artist->save();
-		return;
+		return ['status'=>'ok'];
 
 	}
 	function searchArtist($name){
@@ -81,7 +81,7 @@ class ArtistsApiController extends Controller
 	function delete($id){
 		$artist = Artist::find($id);
 		$artist->delete();
-		return ;
+        return ['status'=>'ok'];
 	}
     //
 }
