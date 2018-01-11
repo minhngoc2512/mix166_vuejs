@@ -49343,12 +49343,13 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 });
                 return;
             }
+            console.log(this.category);
             var formData = new FormData();
             formData.append("id", this.id);
             formData.append("name", this.name);
             formData.append("typeFile", this.typeFile);
             formData.append("thumbnail", this.thumbnail);
-            formData.append("category", this.category.id);
+            formData.append("category", this.category);
             formData.append("genre", this.genre);
             formData.append("artist", this.artist);
             formData.append("status", this.status);

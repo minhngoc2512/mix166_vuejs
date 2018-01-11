@@ -34,7 +34,7 @@ class FilesApiController extends Controller
             $path= $request->url;
         }
         if($request->file("thumbnail")==null||$request->file("thumbnail")==""){
-            $path_thumbnail_db= '/thumnail/user_1/2018/1/1/NCgDcQVCAzfX1qmfR61MuVg56k9uWQaFrQ7IyomT.png';
+            $path_thumbnail_db= '/thumnail/user_1/2018/1/2/d4xboyO9rn9QyHr5bgyoBHN5QEN2F3F46jCFYv0a.png';
         }else{
             $img_thumbnail = $request->file("thumbnail");
         $path_thumbnail = 'public/thumnail/user_'.$user[0].'/'.$now->year.'/'.$now->month.'/'.$now->day;
